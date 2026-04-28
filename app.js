@@ -7,13 +7,12 @@
 let express = require('express');
 let path = require('path');
 let debug = require('debug')('app');
-let bodyParser = require('body-parser');
 
 let api = require(path.join(__dirname, 'routes/api'));
 let app = express();
 
 app.set('x-powered-by', false);
-app.use(bodyParser.json());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: 3600000}));
 
 app.use('/api', api);

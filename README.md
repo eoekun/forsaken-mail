@@ -18,6 +18,7 @@ You can use an [smtp server tester](http://mxtoolbox.com/diagnostic.aspx) to ver
 #### Let's Go
 general way:
 ```
+# Node.js 24 is supported in current version
 npm install && npm start
 ```
 if you want to run this inside a docker container
