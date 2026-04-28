@@ -87,7 +87,12 @@ module.exports = function(io) {
   mailin.on('message', function(connection, data) {
     sendDingtalkNotification();
 
-    let to = data.headers.to.toLowerCase();
+    let to = (data && data.headers && typeof data.headers.to === 'string')
+      ? data.headers.to.toLowerCase()
+      : '';
+    if (!to) {
+      return;
+    }
     let exp = /[\w\._\-\+]+@[\w\._\-\+]+/i;
     if(exp.test(to)) {
       let matches = to.match(exp);

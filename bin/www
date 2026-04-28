@@ -10,7 +10,7 @@ let path = require('path');
 let app = require(path.join(__dirname, '..', 'app'));
 let ioApp = require(path.join(__dirname, '..', 'modules/io'));
 let debug = require('debug')('server');
-let io = require('socket.io');
+let SocketIO = require('socket.io');
 let http = require('http');
 
 /**
@@ -25,7 +25,8 @@ app.set('port', port);
  */
 
 let server = http.createServer(app);
-ioApp(io(server));
+let io = new SocketIO.Server(server);
+ioApp(io);
 
 
 /**

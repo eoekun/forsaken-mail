@@ -21,6 +21,7 @@ Forsaken-Mail
 #### 开始运行
 通用方式：
 ```bash
+# 当前版本已支持 Node.js 24
 npm install && npm start
 ```
 
