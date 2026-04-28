@@ -4,13 +4,20 @@
 
 'use strict';
 
-const shortid = require('shortid');
 const mailin = require('./mailin');
 const config = require('./config');
 const sendDingtalkNotification = require('./dingtalk');
 
 let onlines = new Map();
 const shortidExp = /^[a-z0-9._\-\+]{1,64}$/;
+const firstNamePool = [
+  'alex', 'mike', 'tom', 'jack', 'leo', 'sam', 'eric', 'lucas', 'liam', 'noah',
+  'emma', 'olivia', 'sophia', 'mia', 'ava', 'lily', 'grace', 'ella', 'zoe', 'nina'
+];
+const tagPool = [
+  'mail', 'inbox', 'user', 'note', 'cloud', 'river', 'forest', 'stone', 'ocean', 'field',
+  'sun', 'moon', 'star', 'leaf', 'bird', 'fox', 'wolf', 'lake', 'hill', 'wind'
+];
 
 function normalizeShortId(id) {
   if (typeof id !== 'string') {
@@ -41,9 +48,39 @@ function checkShortIdMatchBlackList(id) {
 
 function assignGeneratedShortId(socket) {
   onlines.delete(socket.shortid);
-  socket.shortid = shortid.generate().toLowerCase(); // generate shortid for a request
+  socket.shortid = generateReadableShortId();
   onlines.set(socket.shortid, socket); // add incomming connection to online table
   socket.emit('shortid', socket.shortid);
+}
+
+function randomPick(pool) {
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function generateCandidate() {
+  const name = randomPick(firstNamePool);
+  const tag = randomPick(tagPool);
+  const suffix = Math.floor(100 + Math.random() * 900);
+  return name + tag + suffix;
+}
+
+function generateReadableShortId() {
+  for (let i = 0; i < 20; i++) {
+    const candidate = generateCandidate();
+    if (!shortidExp.test(candidate)) {
+      continue;
+    }
+    if (checkShortIdMatchBlackList(candidate)) {
+      continue;
+    }
+    if (onlines.has(candidate)) {
+      continue;
+    }
+    return candidate;
+  }
+
+  // Extremely rare fallback path.
+  return 'mailuser' + Date.now();
 }
 
 module.exports = function(io) {
