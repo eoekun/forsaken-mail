@@ -34,11 +34,13 @@ $(function(){
       self.removeClass('check');
       self.toggleClass('edit');
       $shortId.prop('placeholder',$placeholder_old);
-      var $mailUser = $shortId.val();
-      var mailaddress = $mailUser + '@' + mailDomain;
-      setMailAddress($mailUser);
-      $shortId.val(mailaddress);
-      window.location.reload();
+      var mailUser = normalizeShortId($shortId.val());
+      if (!mailUser) {
+        socket.emit('request shortid', true);
+        return;
+      }
+      $shortId.val(mailUser + '@' + mailDomain);
+      socket.emit('set shortid', mailUser);
     }
   });
   
@@ -150,6 +152,15 @@ $(function(){
     $('#siteTitleText').text(siteTitle);
   }
 
+  function renderMailAddress(id) {
+    var normalizedId = normalizeShortId(id);
+    if (!normalizedId) {
+      return;
+    }
+    var mailaddress = normalizedId + '@' + mailDomain;
+    $('#shortid').val(mailaddress).parent().siblings('button').find('.mail').attr('data-clipboard-text', mailaddress);
+  }
+
   var setMailAddress = function(id) {
     var normalizedId = normalizeShortId(id);
     if (!normalizedId) {
@@ -158,8 +169,7 @@ $(function(){
     if (canUseLocalStorage) {
       localStorage.setItem('shortid', normalizedId);
     }
-    var mailaddress = normalizedId + '@' + mailDomain;
-    $('#shortid').val(mailaddress).parent().siblings('button').find('.mail').attr('data-clipboard-text', mailaddress);
+    renderMailAddress(normalizedId);
     upsertHistory(normalizedId);
   };
 
@@ -173,7 +183,7 @@ $(function(){
       if(('localStorage' in window)) {
         var currentShortId = localStorage.getItem('shortid');
         if(currentShortId) {
-          setMailAddress(currentShortId);
+          renderMailAddress(currentShortId);
         } else {
           renderHistoryList('');
         }
@@ -233,7 +243,6 @@ $(function(){
     if (!selectedId) {
       return;
     }
-    setMailAddress(selectedId);
     socket.emit('set shortid', selectedId);
   });
 
