@@ -32,8 +32,14 @@ This repository now includes an `nginx` reverse proxy with HTTP Basic Authentica
 
 1. Set auth credentials with environment variables:
 ```
+export MAIL_HOST=mail.example.com
+export MAILIN_HOST=0.0.0.0
+export MAILIN_PORT=25
+export KEYWORD_BLACKLIST=admin,postmaster,system,webmaster,administrator,hostmaster,service,server,root
+export DINGTALK_WEBHOOK_TOKEN=your-dingtalk-access-token
 export BASIC_AUTH_USERNAME=admin
 export BASIC_AUTH_PASSWORD=your-strong-password
+export NGINX_PORT=80
 ```
 
 Or create a local env file:
@@ -41,6 +47,8 @@ Or create a local env file:
 cp .env.example .env
 # then edit .env
 ```
+
+Configuration is now environment-variable based. `config-default.json` is no longer used.
 
 2. Start with docker compose:
 ```
@@ -58,6 +66,8 @@ Notes:
 * SMTP is exposed on port `25` from the `app` service.
 * Web UI is exposed on port `80` through `nginx`.
 * If env vars are not set, compose defaults to `admin / change-me` (only for quick local testing).
+* `MAIL_HOST` is used as the mailbox domain shown in UI (for example `abc@mail.example.com`), even if the page is accessed via server IP.
+* If `DINGTALK_WEBHOOK_TOKEN` is set, each incoming email triggers one fixed DingTalk robot text message. If empty, no request is sent.
 Open your browser and type in
 ```
 http://localhost:3000
