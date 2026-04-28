@@ -3,6 +3,7 @@ Forsaken-Mail
 A self-hosted disposable mail service.
 
 [Online Demo](http://disposable.dhc-app.com)
+[中文文档](./README.zh-CN.md)
 
 ### Installation
 
@@ -24,9 +25,47 @@ if you want to run this inside a docker container
 docker build -t denghongcai/forsaken-mail .
 docker run --name forsaken-mail -d -p 25:25 -p 3000:3000 denghongcai/forsaken-mail
 ```
+
+#### Run with docker compose + basic auth
+
+This repository now includes an `nginx` reverse proxy with HTTP Basic Authentication.
+
+1. Set auth credentials with environment variables:
+```
+export BASIC_AUTH_USERNAME=admin
+export BASIC_AUTH_PASSWORD=your-strong-password
+```
+
+Or create a local env file:
+```
+cp .env.example .env
+# then edit .env
+```
+
+2. Start with docker compose:
+```
+docker compose up -d --build
+```
+
+3. Open in browser:
+```
+http://localhost
+```
+
+The browser will ask for username/password before accessing the web UI.
+
+Notes:
+* SMTP is exposed on port `25` from the `app` service.
+* Web UI is exposed on port `80` through `nginx`.
+* If env vars are not set, compose defaults to `admin / change-me` (only for quick local testing).
 Open your browser and type in
 ```
 http://localhost:3000
+```
+This `:3000` URL is for the direct `docker run` mode above.  
+For `docker compose + nginx auth`, use:
+```
+http://localhost
 ```
 
 Enjoy!
