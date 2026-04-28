@@ -76,7 +76,7 @@ http://localhost
 * `MAIL_HOST` 用于页面展示的邮箱域名（例如 `abc@mail.example.com`），即使你临时通过服务器 IP 访问页面也会按该域名展示。
 * `SITE_TITLE` 用于配置浏览器页面标题和左上角主标题。
 * `DINGTALK_WEBHOOK_TOKEN` 支持两种形式：仅 `access_token`，或完整 webhook URL；为空则不发送请求。
-* `DINGTALK_WEBHOOK_MESSAGE` 用于配置收到新邮件时自动发送的文本内容（钉钉机器人开启关键词校验时很有用）。
+* `DINGTALK_WEBHOOK_MESSAGE` 用于配置自动通知的首行标题（钉钉机器人开启关键词校验时很有用）。
 * 首页新增了“帮助说明”弹窗，支持 DNS 测试与 webhook 模拟消息发送（可临时输入 token 验证）。
 
 浏览器也可以访问：

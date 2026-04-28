@@ -10,6 +10,8 @@ const config = require('./config');
 const DINGTALK_HOST = 'oapi.dingtalk.com';
 const DINGTALK_DEFAULT_PATH = '/robot/send';
 const DINGTALK_TEST_MESSAGE = 'Forsaken-Mail test message.';
+const MAX_PREVIEW_LENGTH = 200;
+const MAX_MESSAGE_LENGTH = 1800;
 
 function buildWebhookTarget(tokenOrUrl) {
   const normalizedValue = typeof tokenOrUrl === 'string' ? tokenOrUrl.trim() : '';
@@ -106,12 +108,59 @@ function postDingtalkText(tokenOrUrl, text) {
   });
 }
 
-function sendDingtalkNotification() {
+function sanitizeSingleLine(value, fallback) {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  return normalized || fallback;
+}
+
+function buildTextPreview(data) {
+  const rawText = data && typeof data.text === 'string' ? data.text : '';
+  const normalized = rawText.replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    return '';
+  }
+  if (normalized.length <= MAX_PREVIEW_LENGTH) {
+    return normalized;
+  }
+  return normalized.slice(0, MAX_PREVIEW_LENGTH) + '...';
+}
+
+function buildMailMessage(data) {
+  const from = sanitizeSingleLine(data && data.headers ? data.headers.from : '', 'unknown');
+  const to = sanitizeSingleLine(data && data.headers ? data.headers.to : '', 'unknown');
+  const subject = sanitizeSingleLine(data && data.headers ? data.headers.subject : '', '(no subject)');
+  const date = sanitizeSingleLine(data && data.headers ? data.headers.date : '', new Date().toISOString());
+  const preview = buildTextPreview(data);
+  const title = sanitizeSingleLine(config.dingtalkWebhookMessage, 'Forsaken-Mail: new email received.');
+
+  const lines = [
+    title,
+    'From: ' + from,
+    'To: ' + to,
+    'Subject: ' + subject,
+    'Date: ' + date
+  ];
+
+  if (preview) {
+    lines.push('Preview: ' + preview);
+  }
+
+  const message = lines.join('\n');
+  if (message.length <= MAX_MESSAGE_LENGTH) {
+    return message;
+  }
+  return message.slice(0, MAX_MESSAGE_LENGTH) + '...';
+}
+
+function sendDingtalkNotification(mailData) {
   const tokenOrUrl = config.dingtalkWebhookToken;
   if (!tokenOrUrl) {
     return;
   }
-  const text = config.dingtalkWebhookMessage;
+  const text = buildMailMessage(mailData);
   postDingtalkText(tokenOrUrl, text)
     .then(function(result) {
       if (!result.ok) {

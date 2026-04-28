@@ -85,7 +85,7 @@ function generateReadableShortId() {
 
 module.exports = function(io) {
   mailin.on('message', function(connection, data) {
-    sendDingtalkNotification();
+    sendDingtalkNotification(data);
 
     let to = (data && data.headers && typeof data.headers.to === 'string')
       ? data.headers.to.toLowerCase()
