@@ -3,6 +3,8 @@
  */
 
 $(function(){
+  var mailDomain = location.hostname;
+
   $('.ui.modal')
     .modal()
   ;
@@ -29,7 +31,7 @@ $(function(){
       self.toggleClass('edit');
       $shortId.prop('placeholder',$placeholder_old);
       $mailUser = $shortId.val();
-      var mailaddress = $mailUser + '@' + location.hostname;
+      var mailaddress = $mailUser + '@' + mailDomain;
       setMailAddress($mailUser);
       $shortId.val(mailaddress);
       window.location.reload();
@@ -55,9 +57,21 @@ $(function(){
 
   var setMailAddress = function(id) {
     localStorage.setItem('shortid', id);
-    var mailaddress = id + '@' + location.hostname;
+    var mailaddress = id + '@' + mailDomain;
     $('#shortid').val(mailaddress).parent().siblings('button').find('.mail').attr('data-clipboard-text', mailaddress);
   };
+
+  $.get('/api/config', function(data) {
+    if (data && typeof data.host === 'string' && data.host.trim()) {
+      mailDomain = data.host.trim().toLowerCase();
+      if(('localStorage' in window)) {
+        var currentShortId = localStorage.getItem('shortid');
+        if(currentShortId) {
+          setMailAddress(currentShortId);
+        }
+      }
+    }
+  });
 
   $('#refreshShortid').click(function() {
     socket.emit('request shortid', true);

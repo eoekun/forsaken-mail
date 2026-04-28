@@ -7,6 +7,7 @@
 const shortid = require('shortid');
 const mailin = require('./mailin');
 const config = require('./config');
+const sendDingtalkNotification = require('./dingtalk');
 
 let onlines = new Map();
 const shortidExp = /^[a-z0-9._\-\+]{1,64}$/;
@@ -47,6 +48,8 @@ function assignGeneratedShortId(socket) {
 
 module.exports = function(io) {
   mailin.on('message', function(connection, data) {
+    sendDingtalkNotification();
+
     let to = data.headers.to.toLowerCase();
     let exp = /[\w\._\-\+]+@[\w\._\-\+]+/i;
     if(exp.test(to)) {
