@@ -46,10 +46,22 @@ function parseToken(value) {
   return value.trim();
 }
 
+function normalizeSiteTitle(value, fallback) {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalized = value.trim();
+  if (!normalized) {
+    return fallback;
+  }
+  return normalized;
+}
+
 const DEFAULTS = {
   mailHost: 'disposable.dhc-app.com',
   mailinHost: '0.0.0.0',
   mailinPort: 25,
+  siteTitle: 'Forsaken Mail',
   keywordBlackList: [
     'admin',
     'postmaster',
@@ -70,6 +82,7 @@ const config = {
     disableWebhook: true
   },
   host: normalizeMailHost(process.env.MAIL_HOST, DEFAULTS.mailHost),
+  siteTitle: normalizeSiteTitle(process.env.SITE_TITLE, DEFAULTS.siteTitle),
   keywordBlackList: parseKeywordList(process.env.KEYWORD_BLACKLIST, DEFAULTS.keywordBlackList),
   dingtalkWebhookToken: parseToken(process.env.DINGTALK_WEBHOOK_TOKEN)
 };

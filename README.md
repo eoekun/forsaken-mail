@@ -33,6 +33,7 @@ This repository now includes an `nginx` reverse proxy with HTTP Basic Authentica
 1. Set auth credentials with environment variables:
 ```
 export MAIL_HOST=mail.example.com
+export SITE_TITLE=Forsaken Mail
 export MAILIN_HOST=0.0.0.0
 export MAILIN_PORT=25
 export KEYWORD_BLACKLIST=admin,postmaster,system,webmaster,administrator,hostmaster,service,server,root
@@ -67,7 +68,9 @@ Notes:
 * Web UI is exposed on port `80` through `nginx`.
 * If env vars are not set, compose defaults to `admin / change-me` (only for quick local testing).
 * `MAIL_HOST` is used as the mailbox domain shown in UI (for example `abc@mail.example.com`), even if the page is accessed via server IP.
+* `SITE_TITLE` controls the browser title and top-left main title in the UI.
 * If `DINGTALK_WEBHOOK_TOKEN` is set, each incoming email triggers one fixed DingTalk robot text message. If empty, no request is sent.
+* The homepage `帮助说明` dialog supports DNS checks and webhook test message sending with a temporary token.
 Open your browser and type in
 ```
 http://localhost:3000

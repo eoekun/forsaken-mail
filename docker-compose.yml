@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     environment:
       MAIL_HOST: ${MAIL_HOST:-}
+      SITE_TITLE: ${SITE_TITLE:-Forsaken Mail}
       MAILIN_HOST: ${MAILIN_HOST:-0.0.0.0}
       MAILIN_PORT: ${MAILIN_PORT:-25}
       KEYWORD_BLACKLIST: ${KEYWORD_BLACKLIST:-admin,postmaster,system,webmaster,administrator,hostmaster,service,server,root}

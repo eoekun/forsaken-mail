@@ -37,6 +37,7 @@ docker run --name forsaken-mail -d -p 25:25 -p 3000:3000 denghongcai/forsaken-ma
 1. 用环境变量设置鉴权账号密码：
 ```bash
 export MAIL_HOST=mail.example.com
+export SITE_TITLE=Forsaken Mail
 export MAILIN_HOST=0.0.0.0
 export MAILIN_PORT=25
 export KEYWORD_BLACKLIST=admin,postmaster,system,webmaster,administrator,hostmaster,service,server,root
@@ -71,7 +72,9 @@ http://localhost
 * Web 端口 `80` 由 `nginx` 服务暴露。
 * 若未设置环境变量，compose 默认使用 `admin / change-me`（仅用于本地快速测试）。
 * `MAIL_HOST` 用于页面展示的邮箱域名（例如 `abc@mail.example.com`），即使你临时通过服务器 IP 访问页面也会按该域名展示。
+* `SITE_TITLE` 用于配置浏览器页面标题和左上角主标题。
 * 若设置 `DINGTALK_WEBHOOK_TOKEN`，每封新邮件会触发一次固定内容的钉钉机器人文本通知；为空则不发送请求。
+* 首页新增了“帮助说明”弹窗，支持 DNS 测试与 webhook 模拟消息发送（可临时输入 token 验证）。
 
 浏览器也可以访问：
 ```text

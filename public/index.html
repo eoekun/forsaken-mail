@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="keywords" content="临时邮箱,forsaken mail,disposable mail">
   <title>Forsaken Mail</title>
+  <script>
+    (function() {
+      try {
+        var cachedTitle = localStorage.getItem('siteTitle');
+        if (cachedTitle && cachedTitle.trim()) {
+          document.title = cachedTitle.trim();
+        }
+      } catch (err) {}
+    })();
+  </script>
   <link href="https://lib.baomitu.com/semantic-ui/2.1.7/semantic.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/css/prism.css">
@@ -13,7 +23,10 @@
   <div class="ui text container" style="max-width: 100% !important;">
     <div href="#" class="header item">
       <img class="logo" src="//semantic-ui.com/examples/assets/images/logo.png" alt="logo">
-      Forsaken Mail
+      <span id="siteTitleText">Forsaken Mail</span>
+    </div>
+    <div class="item">
+      <button id="openHelp" class="ui basic button">帮助说明</button>
     </div>
     <div class="ui label item right floated mailaddress" style="width: 35%;">
       <button class="ui icon button">
@@ -29,6 +42,16 @@
 </div>
 <div class="ui main container">
   <div class="ui grid">
+    <div class="row">
+      <div class="column">
+        <div class="ui message">
+          <div class="header">最近邮箱</div>
+          <div id="mailHistoryList" class="mail-history-list">
+            <span class="ui small grey text">暂无历史记录</span>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="row">
       <div class="column">
         <table class="ui celled selectable table">
@@ -63,6 +86,39 @@
   <div class="header">
   </div>
   <div class="content">
+  </div>
+</div>
+<div class="ui modal" id="helpModal">
+  <i class="close icon"></i>
+  <div class="header">站点配置帮助</div>
+  <div class="content">
+    <h4 class="ui dividing header">1. 域名解析</h4>
+    <p>接收 <code>*@你的域名</code> 邮件，至少需要配置两条记录：</p>
+    <p><code>你的域名 MX 10 你的MX主机</code>，以及 <code>你的MX主机 A 你的服务器IP</code>。</p>
+    <h4 class="ui dividing header">2. 域名测试</h4>
+    <div class="ui form">
+      <div class="field">
+        <label>待测试域名</label>
+        <div class="ui action input">
+          <input id="domainToTest" type="text" placeholder="mail.example.com">
+          <button id="runDomainTest" class="ui primary button">测试 DNS</button>
+        </div>
+      </div>
+    </div>
+    <pre id="domainTestResult" class="help-result">尚未执行测试。</pre>
+    <h4 class="ui dividing header">3. Webhook 配置测试</h4>
+    <div class="ui form">
+      <div class="field">
+        <label>钉钉 Webhook Token</label>
+        <input id="webhookToken" type="password" placeholder="access_token">
+      </div>
+      <div class="field">
+        <label>模拟消息内容</label>
+        <input id="webhookMessage" type="text" value="Forsaken-Mail test message.">
+      </div>
+      <button id="runWebhookTest" class="ui button">发送模拟消息</button>
+    </div>
+    <pre id="webhookTestResult" class="help-result">尚未执行测试。</pre>
   </div>
 </div>
 </body>
