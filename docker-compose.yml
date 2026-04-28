@@ -12,6 +12,7 @@ services:
       MAILIN_PORT: ${MAILIN_PORT:-25}
       KEYWORD_BLACKLIST: ${KEYWORD_BLACKLIST:-admin,postmaster,system,webmaster,administrator,hostmaster,service,server,root}
       DINGTALK_WEBHOOK_TOKEN: ${DINGTALK_WEBHOOK_TOKEN:-}
+      DINGTALK_WEBHOOK_MESSAGE: ${DINGTALK_WEBHOOK_MESSAGE:-new email received.}
       PORT: 3000
     expose:
       - "3000"

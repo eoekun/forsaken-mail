@@ -43,6 +43,7 @@ export MAILIN_HOST=0.0.0.0
 export MAILIN_PORT=25
 export KEYWORD_BLACKLIST=admin,postmaster,system,webmaster,administrator,hostmaster,service,server,root
 export DINGTALK_WEBHOOK_TOKEN=your-dingtalk-access-token
+export DINGTALK_WEBHOOK_MESSAGE=Forsaken-Mail: new email received.
 export BASIC_AUTH_USERNAME=admin
 export BASIC_AUTH_PASSWORD=your-strong-password
 export NGINX_PORT=80
@@ -74,7 +75,8 @@ http://localhost
 * 若未设置环境变量，compose 默认使用 `admin / change-me`（仅用于本地快速测试）。
 * `MAIL_HOST` 用于页面展示的邮箱域名（例如 `abc@mail.example.com`），即使你临时通过服务器 IP 访问页面也会按该域名展示。
 * `SITE_TITLE` 用于配置浏览器页面标题和左上角主标题。
-* 若设置 `DINGTALK_WEBHOOK_TOKEN`，每封新邮件会触发一次固定内容的钉钉机器人文本通知；为空则不发送请求。
+* `DINGTALK_WEBHOOK_TOKEN` 支持两种形式：仅 `access_token`，或完整 webhook URL；为空则不发送请求。
+* `DINGTALK_WEBHOOK_MESSAGE` 用于配置收到新邮件时自动发送的文本内容（钉钉机器人开启关键词校验时很有用）。
 * 首页新增了“帮助说明”弹窗，支持 DNS 测试与 webhook 模拟消息发送（可临时输入 token 验证）。
 
 浏览器也可以访问：

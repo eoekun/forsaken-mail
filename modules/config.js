@@ -46,6 +46,14 @@ function parseToken(value) {
   return value.trim();
 }
 
+function parseText(value, fallback) {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalized = value.trim();
+  return normalized || fallback;
+}
+
 function normalizeSiteTitle(value, fallback) {
   if (typeof value !== 'string') {
     return fallback;
@@ -62,6 +70,7 @@ const DEFAULTS = {
   mailinHost: '0.0.0.0',
   mailinPort: 25,
   siteTitle: 'Forsaken Mail',
+  dingtalkWebhookMessage: 'Forsaken-Mail: new email received.',
   keywordBlackList: [
     'admin',
     'postmaster',
@@ -84,7 +93,8 @@ const config = {
   host: normalizeMailHost(process.env.MAIL_HOST, DEFAULTS.mailHost),
   siteTitle: normalizeSiteTitle(process.env.SITE_TITLE, DEFAULTS.siteTitle),
   keywordBlackList: parseKeywordList(process.env.KEYWORD_BLACKLIST, DEFAULTS.keywordBlackList),
-  dingtalkWebhookToken: parseToken(process.env.DINGTALK_WEBHOOK_TOKEN)
+  dingtalkWebhookToken: parseToken(process.env.DINGTALK_WEBHOOK_TOKEN),
+  dingtalkWebhookMessage: parseText(process.env.DINGTALK_WEBHOOK_MESSAGE, DEFAULTS.dingtalkWebhookMessage)
 };
 
 module.exports = config;

@@ -8,14 +8,48 @@ const https = require('https');
 const config = require('./config');
 
 const DINGTALK_HOST = 'oapi.dingtalk.com';
-const FIXED_TEXT = 'Forsaken-Mail: new email received.';
+const DINGTALK_DEFAULT_PATH = '/robot/send';
+const DINGTALK_TEST_MESSAGE = 'Forsaken-Mail test message.';
 
-function postDingtalkText(token, text) {
-  const normalizedToken = typeof token === 'string' ? token.trim() : '';
-  if (!normalizedToken) {
+function buildWebhookTarget(tokenOrUrl) {
+  const normalizedValue = typeof tokenOrUrl === 'string' ? tokenOrUrl.trim() : '';
+  if (!normalizedValue) {
+    return null;
+  }
+
+  if (/^https?:\/\//i.test(normalizedValue)) {
+    try {
+      const parsed = new URL(normalizedValue);
+      if (!parsed.hostname) {
+        return null;
+      }
+      if (parsed.protocol !== 'https:') {
+        return null;
+      }
+      return {
+        hostname: parsed.hostname,
+        port: parsed.port ? parseInt(parsed.port, 10) : undefined,
+        path: (parsed.pathname || '/') + (parsed.search || ''),
+        protocol: 'https:'
+      };
+    } catch (err) {
+      return null;
+    }
+  }
+
+  return {
+    hostname: DINGTALK_HOST,
+    path: DINGTALK_DEFAULT_PATH + '?access_token=' + encodeURIComponent(normalizedValue),
+    protocol: 'https:'
+  };
+}
+
+function postDingtalkText(tokenOrUrl, text) {
+  const target = buildWebhookTarget(tokenOrUrl);
+  if (!target) {
     return Promise.resolve({
       ok: false,
-      message: 'Webhook token is empty.',
+      message: 'Webhook token/url is empty or invalid.',
       data: null
     });
   }
@@ -28,10 +62,11 @@ function postDingtalkText(token, text) {
 
   return new Promise((resolve, reject) => {
     const req = https.request({
-      hostname: DINGTALK_HOST,
-      port: 443,
+      protocol: target.protocol || 'https:',
+      hostname: target.hostname,
+      port: target.port || 443,
       method: 'POST',
-      path: '/robot/send?access_token=' + encodeURIComponent(normalizedToken),
+      path: target.path,
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload)
@@ -58,6 +93,10 @@ function postDingtalkText(token, text) {
       });
     });
 
+    req.setTimeout(10000, function() {
+      req.destroy(new Error('Request timeout.'));
+    });
+
     req.on('error', function(err) {
       reject(err);
     });
@@ -68,11 +107,17 @@ function postDingtalkText(token, text) {
 }
 
 function sendDingtalkNotification() {
-  const token = config.dingtalkWebhookToken;
-  if (!token) {
+  const tokenOrUrl = config.dingtalkWebhookToken;
+  if (!tokenOrUrl) {
     return;
   }
-  postDingtalkText(token, FIXED_TEXT)
+  const text = config.dingtalkWebhookMessage;
+  postDingtalkText(tokenOrUrl, text)
+    .then(function(result) {
+      if (!result.ok) {
+        console.error('DingTalk webhook returned non-ok result:', JSON.stringify(result));
+      }
+    })
     .catch(function(err) {
       console.error('DingTalk webhook request failed:', err.message);
     });
@@ -82,6 +127,6 @@ module.exports = sendDingtalkNotification;
 module.exports.sendTestNotification = function(token, text) {
   const message = typeof text === 'string' && text.trim()
     ? text.trim()
-    : 'Forsaken-Mail test message.';
+    : DINGTALK_TEST_MESSAGE;
   return postDingtalkText(token, message);
 };
