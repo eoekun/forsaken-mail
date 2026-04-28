@@ -35,3 +35,11 @@ body {
 .mailaddress {
     font-size: 1.14285714rem !important;
 }
+
+.mail-history-list {
+    margin-top: 0.6em;
+}
+
+.mail-history-item {
+    margin: 0 0.6em 0.6em 0 !important;
+}
