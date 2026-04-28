@@ -72,7 +72,7 @@ Notes:
 * `MAIL_HOST` is used as the mailbox domain shown in UI (for example `abc@mail.example.com`), even if the page is accessed via server IP.
 * `SITE_TITLE` controls the browser title and top-left main title in the UI.
 * `DINGTALK_WEBHOOK_TOKEN` accepts either DingTalk `access_token` or a full webhook URL. If empty, no request is sent.
-* `DINGTALK_WEBHOOK_MESSAGE` controls the auto message content for incoming emails (useful when DingTalk robot keyword checks are enabled).
+* `DINGTALK_WEBHOOK_MESSAGE` controls the first line/title prefix of auto notifications (useful when DingTalk robot keyword checks are enabled).
 * The homepage `帮助说明` dialog supports DNS checks and webhook test message sending with a temporary token.
 Open your browser and type in
 ```
