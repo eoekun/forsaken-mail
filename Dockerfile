@@ -12,12 +12,14 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-COPY --from=frontend /app/dist ./embed
+COPY --from=frontend /embed ./embed
 RUN CGO_ENABLED=1 go build -o /app/forsaken-mail ./cmd/server
 
 FROM alpine:3.21
-RUN apk add --no-cache ca-certificates sqlite-libs
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk add --no-cache ca-certificates sqlite-libs
 COPY --from=backend /app/forsaken-mail /usr/local/bin/forsaken-mail
+COPY --from=frontend /embed /embed
 VOLUME /data
 EXPOSE 25 3000
 CMD ["forsaken-mail"]
