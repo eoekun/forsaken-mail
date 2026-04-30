@@ -1,13 +1,23 @@
-FROM node:24-alpine
-MAINTAINER Hongcai Deng <admin@dhchouse.com>
+FROM node:24-alpine AS frontend
+WORKDIR /app
+COPY web/package.json web/package-lock.json* ./
+RUN npm install
+COPY web/ .
+RUN npm run build
 
-WORKDIR /forsaken-mail
+FROM golang:1.24-alpine AS backend
+RUN apk add --no-cache gcc musl-dev
+ENV GOPROXY=https://goproxy.cn,direct
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+COPY --from=frontend /app/dist ./embed
+RUN CGO_ENABLED=1 go build -o /app/forsaken-mail ./cmd/server
 
-COPY package*.json ./
-RUN npm install --production && npm cache clean --force
-
-COPY . /forsaken-mail
-
-EXPOSE 25
-EXPOSE 3000
-CMD ["npm", "start"]
+FROM alpine:3.21
+RUN apk add --no-cache ca-certificates sqlite-libs
+COPY --from=backend /app/forsaken-mail /usr/local/bin/forsaken-mail
+VOLUME /data
+EXPOSE 25 3000
+CMD ["forsaken-mail"]

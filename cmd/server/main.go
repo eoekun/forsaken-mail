@@ -108,13 +108,14 @@ func main() {
 	// API router
 	apiRouter := api.NewRouter(cfg, sessions, authMW, mailStore, settingsStore, auditStore, hub, webhookSender)
 
+	// Combine API routes with static file serving for the SPA.
 	httpServer := &http.Server{
 		Addr: fmt.Sprintf(":%d", cfg.Port),
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
 	}
-	httpServer.Handler = apiRouter.Handler()
+	httpServer.Handler = spaHandler(apiRouter.Handler(), "embed")
 
 	go func() {
 		slog.Info("HTTP server starting", "addr", httpServer.Addr)
@@ -151,4 +152,36 @@ func main() {
 	}
 
 	slog.Info("forsaken-mail stopped")
+}
+
+// spaHandler wraps an API handler with static file serving for the SPA.
+// Requests for existing files in the staticDir are served directly.
+// All other requests fall through to the API handler, and if that returns
+// 404, the SPA's index.html is served instead.
+func spaHandler(apiHandler http.Handler, staticDir string) http.Handler {
+	staticFS := os.DirFS(staticDir)
+	fileServer := http.FileServer(http.FS(staticFS))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// API and auth routes go directly to the API handler.
+		if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/auth/") || r.URL.Path == "/ws" {
+			apiHandler.ServeHTTP(w, r)
+			return
+		}
+
+		// Try to serve a static file.
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		if path == "" {
+			path = "index.html"
+		}
+		if f, err := staticFS.Open(path); err == nil {
+			f.Close()
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		// SPA fallback: serve index.html.
+		r.URL.Path = "/"
+		fileServer.ServeHTTP(w, r)
+	})
 }
