@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
@@ -15,25 +14,26 @@ import (
 	"strings"
 	"syscall"
 
+	"forsaken-mail/internal/api"
 	"forsaken-mail/internal/audit"
+	"forsaken-mail/internal/auth"
 	"forsaken-mail/internal/config"
 	"forsaken-mail/internal/logger"
 	"forsaken-mail/internal/mail"
 	"forsaken-mail/internal/settings"
 	fsmtp "forsaken-mail/internal/smtp"
+	"forsaken-mail/internal/webhook"
 	"forsaken-mail/internal/ws"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	// 1. Load config.
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	// 2. Setup logger.
 	logger.Setup(cfg)
 
 	slog.Info("forsaken-mail starting",
@@ -42,7 +42,6 @@ func main() {
 		"smtp_addr", fmt.Sprintf("%s:%d", cfg.MailinHost, cfg.MailinPort),
 	)
 
-	// 3. Open SQLite database.
 	if err := os.MkdirAll(filepath.Dir(cfg.DBPath), 0o755); err != nil {
 		log.Fatalf("failed to create data directory: %v", err)
 	}
@@ -50,10 +49,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
-	db.SetMaxOpenConns(1) // SQLite supports a single writer.
+	db.SetMaxOpenConns(1)
 	defer db.Close()
 
-	// 4. Initialize stores.
 	settingsStore := settings.NewStore(db)
 	if err := settingsStore.Init(); err != nil {
 		log.Fatalf("failed to init settings store: %v", err)
@@ -69,12 +67,10 @@ func main() {
 		log.Fatalf("failed to init mail store: %v", err)
 	}
 
-	// 5. Seed settings from environment.
 	if err := settingsStore.SeedFromEnv(cfg); err != nil {
 		log.Fatalf("failed to seed settings: %v", err)
 	}
 
-	// Load blacklist from settings for the WebSocket hub.
 	blacklistStr, err := settingsStore.Get("keyword_blacklist")
 	if err != nil {
 		log.Fatalf("failed to read keyword_blacklist: %v", err)
@@ -89,86 +85,70 @@ func main() {
 		}
 	}
 
-	// 6. Create WebSocket hub.
 	hub := ws.NewHub(blacklist, cfg.MailHost)
 
-	// 7. Create mail router (webhook sender is nil for now; Phase 2 adds it).
-	router := mail.NewRouter(mailStore, hub, settingsStore, auditStore, nil)
+	webhookSender := webhook.NewSender(settingsStore)
 
-	// 8. Create SMTP server with rate limiter.
+	router := mail.NewRouter(mailStore, hub, settingsStore, auditStore, webhookSender)
+
 	smtpAddr := fmt.Sprintf("%s:%d", cfg.MailinHost, cfg.MailinPort)
-	limiter := fsmtp.NewRateLimiter(10, 20) // 10 req/s, burst 20 per IP
+	limiter := fsmtp.NewRateLimiter(10, 20)
 	smtpServer := fsmtp.New(router, limiter, settingsStore, auditStore)
 
-	// 9. Start cleanup goroutine.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	go mail.StartCleanup(ctx, mailStore, auditStore, settingsStore)
-
-	// 10. Start hub event loop.
 	go hub.Run(ctx)
 
-	// 11. Setup HTTP routes.
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/health", handleHealth)
-	mux.HandleFunc("/ws", hub.HandleWS)
+	// Auth
+	sessions := auth.NewSessionManager(cfg.SessionSecret)
+	authMW := auth.NewMiddleware(sessions, settingsStore)
 
-	// 12. Start HTTP server.
-	httpAddr := fmt.Sprintf(":%d", cfg.Port)
+	// API router
+	apiRouter := api.NewRouter(cfg, sessions, authMW, mailStore, settingsStore, auditStore, hub, webhookSender)
+
 	httpServer := &http.Server{
-		Addr:    httpAddr,
-		Handler: mux,
+		Addr: fmt.Sprintf(":%d", cfg.Port),
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
 	}
+	httpServer.Handler = apiRouter.Handler()
 
 	go func() {
-		slog.Info("HTTP server starting", "addr", httpAddr)
+		slog.Info("HTTP server starting", "addr", httpServer.Addr)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("HTTP server error: %v", err)
 		}
 	}()
 
-	// Start SMTP server.
 	go func() {
 		if err := smtpServer.ListenAndServe(smtpAddr); err != nil {
 			log.Fatalf("SMTP server error: %v", err)
 		}
 	}()
 
-	// 13. Graceful shutdown on SIGINT or SIGTERM.
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
 	slog.Info("received shutdown signal", "signal", sig)
 
-	// Cancel context to stop background goroutines.
 	cancel()
 
-	// Shutdown HTTP server.
 	if err := httpServer.Shutdown(context.Background()); err != nil {
 		slog.Error("HTTP server shutdown error", "error", err)
 	}
 
-	// Close SMTP server.
 	if err := smtpServer.Close(); err != nil {
 		slog.Error("SMTP server shutdown error", "error", err)
 	}
 
-	// Close WebSocket hub.
 	hub.Close()
 
-	// Close database.
 	if err := db.Close(); err != nil {
 		slog.Error("database close error", "error", err)
 	}
 
 	slog.Info("forsaken-mail stopped")
-}
-
-func handleHealth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }

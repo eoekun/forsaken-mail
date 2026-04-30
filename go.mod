@@ -7,6 +7,7 @@ require (
 	github.com/emersion/go-smtp v0.21.3
 	github.com/jhillyerd/enmime v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.24
+	golang.org/x/oauth2 v0.28.0
 	golang.org/x/time v0.9.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
