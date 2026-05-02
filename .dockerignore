@@ -3,8 +3,6 @@
 .idea
 .DS_Store
 
-# Frontend — built in its own stage, not needed in backend context
-web/
 node_modules
 npm-debug.log*
 yarn-debug.log*

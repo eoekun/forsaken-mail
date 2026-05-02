@@ -11,7 +11,8 @@ ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
-COPY . .
+COPY cmd/ cmd/
+COPY internal/ internal/
 COPY --from=frontend /embed ./embed
 RUN CGO_ENABLED=1 go build -o /app/forsaken-mail ./cmd/server
 
