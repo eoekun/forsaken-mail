@@ -17,7 +17,7 @@ export default function MainPage() {
   return (
     <div className="min-h-screen bg-base-200">
       <Navbar />
-      <div className="container mx-auto p-4 max-w-6xl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
         <MailboxAddress
           shortId={shortId}
           host={config?.host}

@@ -1,8 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { apiGet } from '../lib/api'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 const EVENTS = ['', 'LOGIN', 'LOGIN_DENIED', 'LOGOUT', 'MAILBOX_CREATE', 'MAIL_RECEIVED', 'MAIL_DROPPED', 'WEBHOOK_SENT', 'CONFIG_CHANGED']
+
+const EVENT_COLORS = {
+  LOGIN: 'bg-success/10 text-success',
+  LOGIN_DENIED: 'bg-error/10 text-error',
+  LOGOUT: 'bg-base-content/10 text-base-content/60',
+  MAILBOX_CREATE: 'bg-info/10 text-info',
+  MAIL_RECEIVED: 'bg-primary/10 text-primary',
+  MAIL_DROPPED: 'bg-warning/10 text-warning',
+  WEBHOOK_SENT: 'bg-accent/10 text-accent',
+  CONFIG_CHANGED: 'bg-secondary/10 text-secondary',
+}
 
 export default function AuditLogTab() {
   const { t } = useTranslation()
@@ -31,41 +43,71 @@ export default function AuditLogTab() {
   useEffect(() => { fetchLogs() }, [event, offset])
 
   return (
-    <div className="card bg-base-100 shadow-md">
-      <div className="card-body">
-        <div className="flex gap-2 mb-4">
-          <select className="select select-bordered select-sm" value={event} onChange={e => { setEvent(e.target.value); setOffset(0) }}>
-            {EVENTS.map(e => <option key={e} value={e}>{e || t('audit.allEvents')}</option>)}
-          </select>
-          <span className="text-sm self-center text-base-content/70">{t('audit.total', { count: total })}</span>
+    <div className="card-modern p-5">
+      <div className="flex items-center gap-3 mb-4">
+        <select
+          className="input-modern input-sm text-sm"
+          value={event}
+          onChange={e => { setEvent(e.target.value); setOffset(0) }}
+        >
+          {EVENTS.map(e => <option key={e} value={e}>{e || t('audit.allEvents')}</option>)}
+        </select>
+        <span className="text-xs text-base-content/40">{t('audit.total', { count: total })}</span>
+      </div>
+      {loading ? (
+        <div className="flex justify-center py-8"><span className="loading loading-spinner text-primary"></span></div>
+      ) : (
+        <div className="overflow-x-auto -mx-5">
+          <table className="table w-full">
+            <thead>
+              <tr className="text-xs text-base-content/40">
+                <th className="font-medium px-5">{t('audit.time')}</th>
+                <th className="font-medium">{t('audit.event')}</th>
+                <th className="font-medium">{t('audit.email')}</th>
+                <th className="font-medium">{t('audit.detail')}</th>
+                <th className="font-medium">{t('audit.ip')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map(log => (
+                <tr key={log.id} className="text-sm hover:bg-base-200/40">
+                  <td className="whitespace-nowrap text-xs text-base-content/50 px-5">
+                    {new Date(log.created_at).toLocaleString()}
+                  </td>
+                  <td>
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${EVENT_COLORS[log.event] || 'bg-base-200 text-base-content/60'}`}>
+                      {log.event}
+                    </span>
+                  </td>
+                  <td className="text-xs">{log.email}</td>
+                  <td className="max-w-[200px] truncate text-xs text-base-content/60">{log.detail}</td>
+                  <td className="text-xs font-mono text-base-content/50">{log.ip}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        {loading ? (
-          <div className="flex justify-center"><span className="loading loading-spinner"></span></div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="table table-xs">
-              <thead>
-                <tr><th>{t('audit.time')}</th><th>{t('audit.event')}</th><th>{t('audit.email')}</th><th>{t('audit.detail')}</th><th>{t('audit.ip')}</th></tr>
-              </thead>
-              <tbody>
-                {logs.map(log => (
-                  <tr key={log.id}>
-                    <td className="whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
-                    <td><span className="badge badge-sm">{log.event}</span></td>
-                    <td>{log.email}</td>
-                    <td className="max-w-[200px] truncate">{log.detail}</td>
-                    <td>{log.ip}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className="flex justify-between mt-4">
-          <button className="btn btn-sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))}>{t('audit.previous')}</button>
-          <span className="text-sm self-center">{t('audit.pagination', { start: offset + 1, end: Math.min(offset + limit, total), total })}</span>
-          <button className="btn btn-sm" disabled={offset + limit >= total} onClick={() => setOffset(offset + limit)}>{t('audit.next')}</button>
-        </div>
+      )}
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-base-300/40">
+        <button
+          className="btn-modern btn-sm btn-ghost gap-1"
+          disabled={offset === 0}
+          onClick={() => setOffset(Math.max(0, offset - limit))}
+        >
+          <ChevronLeft size={14} />
+          {t('audit.previous')}
+        </button>
+        <span className="text-xs text-base-content/40 tabular-nums">
+          {t('audit.pagination', { start: offset + 1, end: Math.min(offset + limit, total), total })}
+        </span>
+        <button
+          className="btn-modern btn-sm btn-ghost gap-1"
+          disabled={offset + limit >= total}
+          onClick={() => setOffset(offset + limit)}
+        >
+          {t('audit.next')}
+          <ChevronRight size={14} />
+        </button>
       </div>
     </div>
   )

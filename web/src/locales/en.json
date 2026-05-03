@@ -2,7 +2,9 @@
   "navbar": {
     "admin": "Admin",
     "logout": "Logout",
-    "language": "Language"
+    "language": "Language",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode"
   },
   "login": {
     "title": "Forsaken Mail",

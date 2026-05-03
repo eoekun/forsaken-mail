@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { apiGet, apiPut } from '../lib/api'
+import { Save, Check } from 'lucide-react'
 
 const EDITABLE_KEYS = [
   'mail_host', 'site_title', 'allowed_emails', 'keyword_blacklist',
@@ -40,30 +41,38 @@ export default function SettingsTab() {
     }
   }
 
-  if (loading) return <div className="flex justify-center"><span className="loading loading-spinner"></span></div>
+  if (loading) return <div className="flex justify-center py-12"><span className="loading loading-spinner text-primary"></span></div>
 
   return (
-    <div className="card bg-base-100 shadow-md">
-      <div className="card-body">
-        {toast && <div className="alert alert-success mb-4"><span>{toast}</span></div>}
-        <div className="grid gap-4">
-          {EDITABLE_KEYS.map(key => (
-            <div key={key} className="form-control">
-              <label className="label"><span className="label-text">{key}</span></label>
-              <input
-                type="text"
-                className="input input-bordered input-sm"
-                value={settings[key] || ''}
-                onChange={e => setSettings(prev => ({ ...prev, [key]: e.target.value }))}
-              />
-            </div>
-          ))}
+    <div className="card-modern p-5">
+      {toast && (
+        <div className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-lg bg-success/10 text-success text-sm">
+          <Check size={15} />
+          <span>{toast}</span>
         </div>
-        <div className="mt-4">
-          <button className={`btn btn-primary ${saving ? 'loading' : ''}`} onClick={handleSave} disabled={saving}>
-            {saving ? t('settings.saving') : t('settings.save')}
-          </button>
-        </div>
+      )}
+      <div className="space-y-4">
+        {EDITABLE_KEYS.map(key => (
+          <div key={key}>
+            <label className="block text-xs font-medium text-base-content/50 mb-1.5">{key}</label>
+            <input
+              type="text"
+              className="input-modern input-sm w-full"
+              value={settings[key] || ''}
+              onChange={e => setSettings(prev => ({ ...prev, [key]: e.target.value }))}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 pt-4 border-t border-base-300/40">
+        <button
+          className={`btn-modern btn-sm btn-primary gap-2 ${saving ? 'loading' : ''}`}
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {!saving && <Save size={14} />}
+          {saving ? t('settings.saving') : t('settings.save')}
+        </button>
       </div>
     </div>
   )

@@ -14,22 +14,18 @@ export default function StatusTab() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="flex justify-center"><span className="loading loading-spinner"></span></div>
+  if (loading) return <div className="flex justify-center py-12"><span className="loading loading-spinner text-primary"></span></div>
 
-  if (!status) return <div className="alert alert-error">{t('status.failed')}</div>
+  if (!status) return <div className="alert alert-error rounded-lg">{t('status.failed')}</div>
 
   return (
-    <div className="card bg-base-100 shadow-md">
-      <div className="card-body">
-        <div className="grid grid-cols-2 gap-4">
-          {Object.entries(status).map(([key, value]) => (
-            <div key={key}>
-              <div className="text-sm text-base-content/70">{key}</div>
-              <div className="text-lg font-mono">{String(value)}</div>
-            </div>
-          ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {Object.entries(status).map(([key, value]) => (
+        <div key={key} className="card-modern p-4">
+          <div className="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1">{key}</div>
+          <div className="text-base font-mono font-medium text-base-content">{String(value)}</div>
         </div>
-      </div>
+      ))}
     </div>
   )
 }

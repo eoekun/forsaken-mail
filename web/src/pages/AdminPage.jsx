@@ -5,6 +5,8 @@ import AuditLogTab from '../components/AuditLogTab'
 import SettingsTab from '../components/SettingsTab'
 import StatusTab from '../components/StatusTab'
 
+const TABS = ['audit', 'settings', 'status']
+
 export default function AdminPage() {
   const { t } = useTranslation()
   const [tab, setTab] = useState('audit')
@@ -12,11 +14,21 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-base-200">
       <Navbar />
-      <div className="container mx-auto p-4 max-w-4xl">
-        <div className="tabs tabs-boxed mb-4">
-          <button className={`tab ${tab === 'audit' ? 'tab-active' : ''}`} onClick={() => setTab('audit')}>{t('admin.auditLogs')}</button>
-          <button className={`tab ${tab === 'settings' ? 'tab-active' : ''}`} onClick={() => setTab('settings')}>{t('admin.settings')}</button>
-          <button className={`tab ${tab === 'status' ? 'tab-active' : ''}`} onClick={() => setTab('status')}>{t('admin.status')}</button>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        <div className="flex items-center gap-1 border-b border-base-300/60 mb-6">
+          {TABS.map(key => (
+            <button
+              key={key}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors duration-150 ${
+                tab === key
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-base-content/50 hover:text-base-content/70 hover:border-base-300'
+              }`}
+              onClick={() => setTab(key)}
+            >
+              {t(`admin.${key === 'audit' ? 'auditLogs' : key}`)}
+            </button>
+          ))}
         </div>
         {tab === 'audit' && <AuditLogTab />}
         {tab === 'settings' && <SettingsTab />}
