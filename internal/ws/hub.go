@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"forsaken-mail/internal/i18n"
+
 	"github.com/coder/websocket"
 )
 
@@ -71,6 +73,7 @@ type Client struct {
 	conn    *websocket.Conn
 	send    chan []byte
 	shortID string
+	lang    string
 }
 
 // readPump reads messages from the WebSocket connection and dispatches them
@@ -92,7 +95,7 @@ func (c *Client) readPump(ctx context.Context) {
 
 		var msg inboundMsg
 		if err := json.Unmarshal(data, &msg); err != nil {
-			c.sendError("invalid message format")
+			c.sendError(i18n.T(c.lang, "invalid_message_format"))
 			continue
 		}
 
@@ -107,11 +110,11 @@ func (c *Client) readPump(ctx context.Context) {
 		case "set_shortid":
 			normalized := normalizeShortID(msg.ShortID)
 			if normalized == "" {
-				c.sendError("invalid short id")
+				c.sendError(i18n.T(c.lang, "invalid_short_id"))
 				continue
 			}
 			if c.hub.isBlacklisted(normalized) {
-				c.sendError("short id in blacklist")
+				c.sendError(i18n.T(c.lang, "shortid_in_blacklist"))
 				continue
 			}
 			c.hub.unregister <- c
@@ -121,7 +124,7 @@ func (c *Client) readPump(ctx context.Context) {
 			slog.Info("websocket set shortid", "short_id", c.shortID)
 
 		default:
-			c.sendError("unknown message type")
+			c.sendError(i18n.T(c.lang, "unknown_message_type"))
 		}
 	}
 }
@@ -249,7 +252,7 @@ func (h *Hub) SendTo(shortID string, data any) {
 
 // HandleWS upgrades an HTTP request to a WebSocket connection and starts
 // the client read/write pumps.
-func (h *Hub) HandleWS(w http.ResponseWriter, r *http.Request) {
+func (h *Hub) HandleWS(w http.ResponseWriter, r *http.Request, lang string) {
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		CompressionMode: websocket.CompressionContextTakeover,
 	})
@@ -262,6 +265,7 @@ func (h *Hub) HandleWS(w http.ResponseWriter, r *http.Request) {
 		hub:  h,
 		conn: conn,
 		send: make(chan []byte, 256),
+		lang: lang,
 	}
 
 	slog.Info("websocket connected", "remote", r.RemoteAddr)

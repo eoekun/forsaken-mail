@@ -1,10 +1,14 @@
+import { useTranslation } from 'react-i18next'
+
 export default function MailList({ mails, selectedMail, onSelect }) {
+  const { t } = useTranslation()
+
   if (mails.length === 0) {
     return (
       <div className="card bg-base-100 shadow-md">
         <div className="card-body">
-          <h3 className="card-title text-sm">Mails</h3>
-          <p className="text-base-content/50 text-sm">No emails yet. Waiting for incoming mail...</p>
+          <h3 className="card-title text-sm">{t('mailList.title')}</h3>
+          <p className="text-base-content/50 text-sm">{t('mailList.empty')}</p>
         </div>
       </div>
     )
@@ -17,9 +21,9 @@ export default function MailList({ mails, selectedMail, onSelect }) {
           <table className="table table-sm">
             <thead>
               <tr>
-                <th>From</th>
-                <th>Subject</th>
-                <th>Time</th>
+                <th>{t('mailList.from')}</th>
+                <th>{t('mailList.subject')}</th>
+                <th>{t('mailList.time')}</th>
               </tr>
             </thead>
             <tbody>
@@ -30,7 +34,7 @@ export default function MailList({ mails, selectedMail, onSelect }) {
                   onClick={() => onSelect(mail)}
                 >
                   <td className="max-w-[120px] truncate">{mail.from}</td>
-                  <td className="max-w-[150px] truncate">{mail.subject || '(no subject)'}</td>
+                  <td className="max-w-[150px] truncate">{mail.subject || t('mailList.noSubject')}</td>
                   <td className="whitespace-nowrap">{new Date(mail.created_at).toLocaleTimeString()}</td>
                 </tr>
               ))}

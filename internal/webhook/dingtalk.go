@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"forsaken-mail/internal/i18n"
 	"forsaken-mail/internal/settings"
 )
 
@@ -73,10 +74,11 @@ func (s *Sender) Send(from, to, subject, text string) {
 }
 
 // SendTest sends a test message with the given token.
-func (s *Sender) SendTest(token, message string) (*Result, error) {
+// lang is used for translating user-facing messages (e.g. "en" or "zh").
+func (s *Sender) SendTest(token, message, lang string) (*Result, error) {
 	token = strings.TrimSpace(token)
 	if token == "" {
-		return &Result{OK: false, Message: "Webhook token/url is empty or invalid."}, nil
+		return &Result{OK: false, Message: i18n.T(lang, "webhook_token_empty")}, nil
 	}
 
 	text := strings.TrimSpace(message)
@@ -125,7 +127,7 @@ func buildWebhookTarget(tokenOrURL string) *webhookTarget {
 
 // dingtalkRequest is the JSON payload for DingTalk robot API.
 type dingtalkRequest struct {
-	MsgType string            `json:"msgtype"`
+	MsgType string              `json:"msgtype"`
 	Text    dingtalkTextContent `json:"text"`
 }
 

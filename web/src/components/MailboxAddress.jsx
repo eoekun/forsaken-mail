@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const SHORTID_REGEX = /^[a-z0-9._\-+]{1,64}$/
 
@@ -7,6 +8,7 @@ export default function MailboxAddress({ shortId, host, onRefresh, onSetShortId 
   const [editValue, setEditValue] = useState('')
   const [copied, setCopied] = useState(false)
   const inputRef = useRef(null)
+  const { t } = useTranslation()
 
   const address = shortId ? `${shortId}@${host}` : ''
 
@@ -37,7 +39,7 @@ export default function MailboxAddress({ shortId, host, onRefresh, onSetShortId 
   return (
     <div className="card bg-base-100 shadow-md p-4 mt-4">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-medium">Your temp email:</span>
+        <span className="text-sm font-medium">{t('mailbox.yourTempEmail')}</span>
         {editing ? (
           <form onSubmit={handleSubmit} className="flex items-center gap-2 flex-1">
             <input
@@ -46,16 +48,16 @@ export default function MailboxAddress({ shortId, host, onRefresh, onSetShortId 
               className="input input-bordered input-sm flex-1"
               value={editValue}
               onChange={e => setEditValue(e.target.value)}
-              placeholder="Enter custom short ID"
+              placeholder={t('mailbox.customShortId')}
               pattern="[a-z0-9._\-+]{1,64}"
             />
             <span className="text-sm">@{host}</span>
-            <button type="submit" className="btn btn-sm btn-primary">Set</button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
+            <button type="submit" className="btn btn-sm btn-primary">{t('mailbox.set')}</button>
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setEditing(false)}>{t('mailbox.cancel')}</button>
           </form>
         ) : (
           <>
-            <span className="text-lg font-mono">{address || 'Connecting...'}</span>
+            <span className="text-lg font-mono">{address || t('mailbox.connecting')}</span>
             <button className="btn btn-sm btn-ghost" onClick={handleCopy} title="Copy">
               {copied ? '✓' : '📋'}
             </button>

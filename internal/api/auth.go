@@ -8,32 +8,33 @@ import (
 	"time"
 
 	"forsaken-mail/internal/auth"
+	"forsaken-mail/internal/i18n"
 )
 
 // handleOAuthLogin handles GET /auth/{provider}/login.
 // It generates a random state, stores it in a cookie, and redirects to the OAuth provider.
 func (rt *Router) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 		return
 	}
 
 	provider := extractProvider(r.URL.Path)
 	if provider == "" {
-		writeError(w, http.StatusBadRequest, "provider is required")
+		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "provider_required"))
 		return
 	}
 
 	// Verify the requested provider matches the configured one.
 	if strings.ToLower(provider) != strings.ToLower(rt.cfg.OAuthProvider) {
-		writeError(w, http.StatusBadRequest, "unsupported provider")
+		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "unsupported_provider"))
 		return
 	}
 
 	state, err := auth.GenerateState()
 	if err != nil {
 		slog.Error("failed to generate OAuth state", "error", err)
-		writeError(w, http.StatusInternalServerError, "internal server error")
+		writeError(w, http.StatusInternalServerError, i18n.T(i18n.LangFromRequest(r), "internal_server_error"))
 		return
 	}
 
@@ -57,25 +58,27 @@ func (rt *Router) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 // creates a session, and redirects to /.
 func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 		return
 	}
 
 	provider := extractProvider(r.URL.Path)
 	if provider == "" {
-		writeError(w, http.StatusBadRequest, "provider is required")
+		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "provider_required"))
 		return
 	}
+
+	lang := i18n.LangFromRequest(r)
 
 	// Verify state matches cookie.
 	stateCookie, err := r.Cookie("oauth_state")
 	if err != nil || stateCookie.Value == "" {
-		writeError(w, http.StatusBadRequest, "missing or expired state cookie")
+		writeError(w, http.StatusBadRequest, i18n.T(lang, "missing_state_cookie"))
 		return
 	}
 	queryState := r.URL.Query().Get("state")
 	if queryState != stateCookie.Value {
-		writeError(w, http.StatusBadRequest, "state mismatch")
+		writeError(w, http.StatusBadRequest, i18n.T(lang, "state_mismatch"))
 		return
 	}
 
@@ -90,7 +93,7 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	code := r.URL.Query().Get("code")
 	if code == "" {
-		writeError(w, http.StatusBadRequest, "code parameter is required")
+		writeError(w, http.StatusBadRequest, i18n.T(lang, "code_required"))
 		return
 	}
 
@@ -98,14 +101,14 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := rt.provider.Exchange(r.Context(), code, redirectURI)
 	if err != nil {
 		slog.Error("OAuth exchange failed", "provider", provider, "error", err)
-		writeError(w, http.StatusUnauthorized, "OAuth authentication failed")
+		writeError(w, http.StatusUnauthorized, i18n.T(lang, "oauth_auth_failed"))
 		return
 	}
 
 	email, err := rt.provider.GetEmail(r.Context(), token)
 	if err != nil {
 		slog.Error("failed to get user email", "provider", provider, "error", err)
-		writeError(w, http.StatusUnauthorized, "Failed to get user email")
+		writeError(w, http.StatusUnauthorized, i18n.T(lang, "get_email_failed"))
 		return
 	}
 
@@ -113,7 +116,7 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	allowedEmails, err := rt.settings.Get("allowed_emails")
 	if err != nil {
 		slog.Error("failed to get allowed_emails setting", "error", err)
-		writeError(w, http.StatusInternalServerError, "internal server error")
+		writeError(w, http.StatusInternalServerError, i18n.T(lang, "internal_server_error"))
 		return
 	}
 	if allowedEmails != "" {
@@ -154,7 +157,7 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 // It clears the session cookie and redirects to /login.
 func (rt *Router) handleLogout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 		return
 	}
 
@@ -194,4 +197,3 @@ func buildRedirectURI(r *http.Request, provider string) string {
 	host := r.Host
 	return fmt.Sprintf("%s://%s/auth/%s/callback", scheme, host, provider)
 }
-

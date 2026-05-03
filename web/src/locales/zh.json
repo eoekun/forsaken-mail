@@ -1,0 +1,90 @@
+{
+  "navbar": {
+    "admin": "管理",
+    "logout": "退出",
+    "language": "语言"
+  },
+  "login": {
+    "title": "Forsaken Mail",
+    "subtitle": "登录以访问您的临时邮箱",
+    "unauthorized": "您的邮箱未被授权访问此服务。",
+    "github": "使用 GitHub 登录",
+    "google": "使用 Google 登录"
+  },
+  "main": {},
+  "admin": {
+    "auditLogs": "审计日志",
+    "settings": "设置",
+    "status": "状态"
+  },
+  "mailbox": {
+    "yourTempEmail": "您的临时邮箱：",
+    "customShortId": "输入自定义短 ID",
+    "set": "确定",
+    "cancel": "取消",
+    "connecting": "连接中..."
+  },
+  "mailList": {
+    "title": "邮件列表",
+    "empty": "暂无邮件，等待接收中...",
+    "from": "发件人",
+    "subject": "主题",
+    "time": "时间",
+    "noSubject": "(无主题)"
+  },
+  "mailDetail": {
+    "title": "邮件详情",
+    "empty": "请选择一封邮件查看内容。",
+    "from": "发件人：",
+    "to": "收件人：",
+    "noSubject": "(无主题)"
+  },
+  "mailHistory": {
+    "recent": "最近："
+  },
+  "help": {
+    "title": "帮助与测试",
+    "dnsTest": "DNS 测试",
+    "test": "测试",
+    "testing": "测试中...",
+    "webhookTest": "Webhook 测试",
+    "webhookToken": "Webhook Token 或 URL",
+    "testMessage": "测试消息（可选）",
+    "sendTest": "发送测试",
+    "sending": "发送中...",
+    "testEmail": "测试邮件（QQ SMTP）",
+    "qqEmail": "QQ 邮箱（如 123456@qq.com）",
+    "qqAuthCode": "QQ SMTP 授权码",
+    "recipientShortId": "收件人短 ID（默认：test@{{host}}）",
+    "sendTestEmail": "发送测试邮件",
+    "sendingViaQQ": "通过 QQ SMTP 发送中...",
+    "enterWebhookToken": "请输入 Webhook Token。",
+    "enterSenderAndCode": "请输入发件邮箱和授权码。",
+    "close": "关闭",
+    "error": "错误：{{message}}"
+  },
+  "settings": {
+    "saved": "设置已保存！",
+    "error": "错误：{{message}}",
+    "saving": "保存中...",
+    "save": "保存设置"
+  },
+  "status": {
+    "failed": "加载状态失败"
+  },
+  "notification": {
+    "newMail": "收到来自 {{from}} 的新邮件"
+  },
+  "audit": {
+    "allEvents": "全部事件",
+    "total": "总计：{{count}}",
+    "time": "时间",
+    "event": "事件",
+    "email": "邮箱",
+    "detail": "详情",
+    "ip": "IP",
+    "previous": "上一页",
+    "next": "下一页",
+    "pagination": "{{start}} - {{end}} / {{total}}"
+  }
+}

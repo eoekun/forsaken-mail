@@ -6,12 +6,13 @@ import (
 	"net/http"
 
 	"forsaken-mail/internal/auth"
+	"forsaken-mail/internal/i18n"
 )
 
 // handleConfig responds to GET /api/config with site configuration.
 func (rt *Router) handleConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 		return
 	}
 
@@ -35,13 +36,13 @@ func (rt *Router) handleConfig(w http.ResponseWriter, r *http.Request) {
 // handleDomainTest responds to GET /api/domain-test?domain=xxx with DNS MX lookup results.
 func (rt *Router) handleDomainTest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 		return
 	}
 
 	domain := r.URL.Query().Get("domain")
 	if domain == "" {
-		writeError(w, http.StatusBadRequest, "domain parameter is required")
+		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "domain_required"))
 		return
 	}
 

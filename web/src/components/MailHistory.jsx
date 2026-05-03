@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export default function MailHistory({ host, activeShortId, onSelect }) {
   const [history, setHistory] = useState([])
+  const { t } = useTranslation()
 
   useEffect(() => {
     try {
@@ -15,7 +17,7 @@ export default function MailHistory({ host, activeShortId, onSelect }) {
 
   return (
     <div className="flex flex-wrap gap-2 mt-3">
-      <span className="text-xs text-base-content/50 self-center">Recent:</span>
+      <span className="text-xs text-base-content/50 self-center">{t('mailHistory.recent')}</span>
       {history.map(id => (
         <div key={id} className="join">
           <button

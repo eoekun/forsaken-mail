@@ -1,6 +1,12 @@
+import i18n from '../i18n'
+
 export async function apiFetch(url, options = {}) {
+  const headers = new Headers(options.headers)
+  headers.set('Accept-Language', i18n.language)
+
   const res = await fetch(url, {
     ...options,
+    headers,
     credentials: 'same-origin',
   })
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { apiGet, apiPut } from '../lib/api'
 
 const EDITABLE_KEYS = [
@@ -9,6 +10,7 @@ const EDITABLE_KEYS = [
 ]
 
 export default function SettingsTab() {
+  const { t } = useTranslation()
   const [settings, setSettings] = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -29,10 +31,10 @@ export default function SettingsTab() {
         if (key in settings) updates[key] = settings[key]
       }
       await apiPut('/api/admin/settings', updates)
-      setToast('Settings saved!')
+      setToast(t('settings.saved'))
       setTimeout(() => setToast(''), 3000)
     } catch (e) {
-      setToast(`Error: ${e.message}`)
+      setToast(t('settings.error', { message: e.message }))
     } finally {
       setSaving(false)
     }
@@ -59,7 +61,7 @@ export default function SettingsTab() {
         </div>
         <div className="mt-4">
           <button className={`btn btn-primary ${saving ? 'loading' : ''}`} onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving...' : 'Save Settings'}
+            {saving ? t('settings.saving') : t('settings.save')}
           </button>
         </div>
       </div>

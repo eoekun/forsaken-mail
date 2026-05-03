@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import i18n from '../i18n'
 
 export default function useWebSocket(host) {
   const [shortId, setShortId] = useState('')
@@ -38,7 +39,7 @@ export default function useWebSocket(host) {
             setMails(prev => [msg.data, ...prev])
             // Browser notification
             if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('New mail from ' + msg.data.from)
+              new Notification(i18n.t('notification.newMail', { from: msg.data.from }))
             }
             break
           case 'error':

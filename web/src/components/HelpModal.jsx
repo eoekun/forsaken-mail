@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { apiGet, apiPost } from '../lib/api'
 
 export default function HelpModal({ host }) {
+  const { t } = useTranslation()
   const [dnsResult, setDnsResult] = useState('')
   const [webhookToken, setWebhookToken] = useState('')
   const [webhookMessage, setWebhookMessage] = useState('')
@@ -13,22 +15,22 @@ export default function HelpModal({ host }) {
   const [testEmailResult, setTestEmailResult] = useState('')
 
   const runDnsTest = async () => {
-    setDnsResult('Testing...')
+    setDnsResult(t('help.testing'))
     try {
       const domain = dnsDomain || host
       const data = await apiGet(`/api/domain-test?domain=${encodeURIComponent(domain)}`)
       setDnsResult(JSON.stringify(data, null, 2))
     } catch (e) {
-      setDnsResult(`Error: ${e.message}`)
+      setDnsResult(t('help.error', { message: e.message }))
     }
   }
 
   const runWebhookTest = async () => {
     if (!webhookToken) {
-      setWebhookResult('Please enter a webhook token.')
+      setWebhookResult(t('help.enterWebhookToken'))
       return
     }
-    setWebhookResult('Sending...')
+    setWebhookResult(t('help.sending'))
     try {
       const data = await apiPost('/api/webhook/test', {
         token: webhookToken,
@@ -36,16 +38,16 @@ export default function HelpModal({ host }) {
       })
       setWebhookResult(JSON.stringify(data, null, 2))
     } catch (e) {
-      setWebhookResult(`Error: ${e.message}`)
+      setWebhookResult(t('help.error', { message: e.message }))
     }
   }
 
   const runTestEmail = async () => {
     if (!testEmailSender || !testEmailAuthCode) {
-      setTestEmailResult('Please enter sender email and auth code.')
+      setTestEmailResult(t('help.enterSenderAndCode'))
       return
     }
-    setTestEmailResult('Sending via QQ SMTP...')
+    setTestEmailResult(t('help.sendingViaQQ'))
     try {
       const data = await apiPost('/api/test-email', {
         sender_email: testEmailSender,
@@ -54,7 +56,7 @@ export default function HelpModal({ host }) {
       })
       setTestEmailResult(JSON.stringify(data, null, 2))
     } catch (e) {
-      setTestEmailResult(`Error: ${e.message}`)
+      setTestEmailResult(t('help.error', { message: e.message }))
     }
   }
 
@@ -68,9 +70,9 @@ export default function HelpModal({ host }) {
       </button>
       <dialog id="help_modal" className="modal">
         <div className="modal-box max-w-2xl">
-          <h3 className="font-bold text-lg">Help & Testing</h3>
+          <h3 className="font-bold text-lg">{t('help.title')}</h3>
 
-          <div className="divider">DNS Test</div>
+          <div className="divider">{t('help.dnsTest')}</div>
           <div className="flex gap-2 mb-2">
             <input
               type="text"
@@ -79,56 +81,56 @@ export default function HelpModal({ host }) {
               value={dnsDomain}
               onChange={e => setDnsDomain(e.target.value)}
             />
-            <button className="btn btn-sm btn-primary" onClick={runDnsTest}>Test</button>
+            <button className="btn btn-sm btn-primary" onClick={runDnsTest}>{t('help.test')}</button>
           </div>
           <pre className="bg-base-200 p-2 rounded text-xs overflow-auto max-h-40">{dnsResult}</pre>
 
-          <div className="divider">Webhook Test</div>
+          <div className="divider">{t('help.webhookTest')}</div>
           <input
             type="text"
             className="input input-bordered input-sm w-full mb-2"
-            placeholder="Webhook Token or URL"
+            placeholder={t('help.webhookToken')}
             value={webhookToken}
             onChange={e => setWebhookToken(e.target.value)}
           />
           <input
             type="text"
             className="input input-bordered input-sm w-full mb-2"
-            placeholder="Test message (optional)"
+            placeholder={t('help.testMessage')}
             value={webhookMessage}
             onChange={e => setWebhookMessage(e.target.value)}
           />
-          <button className="btn btn-sm btn-primary mb-2" onClick={runWebhookTest}>Send Test</button>
+          <button className="btn btn-sm btn-primary mb-2" onClick={runWebhookTest}>{t('help.sendTest')}</button>
           <pre className="bg-base-200 p-2 rounded text-xs overflow-auto max-h-40">{webhookResult}</pre>
 
-          <div className="divider">Test Email (QQ SMTP)</div>
+          <div className="divider">{t('help.testEmail')}</div>
           <input
             type="text"
             className="input input-bordered input-sm w-full mb-2"
-            placeholder="QQ Email (e.g. 123456@qq.com)"
+            placeholder={t('help.qqEmail')}
             value={testEmailSender}
             onChange={e => setTestEmailSender(e.target.value)}
           />
           <input
             type="text"
             className="input input-bordered input-sm w-full mb-2"
-            placeholder="QQ SMTP Authorization Code"
+            placeholder={t('help.qqAuthCode')}
             value={testEmailAuthCode}
             onChange={e => setTestEmailAuthCode(e.target.value)}
           />
           <input
             type="text"
             className="input input-bordered input-sm w-full mb-2"
-            placeholder={`Recipient short ID (default: test@${host})`}
+            placeholder={t('help.recipientShortId', { host })}
             value={testEmailShortID}
             onChange={e => setTestEmailShortID(e.target.value)}
           />
-          <button className="btn btn-sm btn-primary mb-2" onClick={runTestEmail}>Send Test Email</button>
+          <button className="btn btn-sm btn-primary mb-2" onClick={runTestEmail}>{t('help.sendTestEmail')}</button>
           <pre className="bg-base-200 p-2 rounded text-xs overflow-auto max-h-40">{testEmailResult}</pre>
 
           <div className="modal-action">
             <form method="dialog">
-              <button className="btn">Close</button>
+              <button className="btn">{t('help.close')}</button>
             </form>
           </div>
         </div>

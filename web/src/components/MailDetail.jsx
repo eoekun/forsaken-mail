@@ -1,12 +1,15 @@
 import DOMPurify from 'dompurify'
+import { useTranslation } from 'react-i18next'
 
 export default function MailDetail({ mail }) {
+  const { t } = useTranslation()
+
   if (!mail) {
     return (
       <div className="card bg-base-100 shadow-md">
         <div className="card-body">
-          <h3 className="card-title text-sm">Mail Detail</h3>
-          <p className="text-base-content/50 text-sm">Select an email to view its content.</p>
+          <h3 className="card-title text-sm">{t('mailDetail.title')}</h3>
+          <p className="text-base-content/50 text-sm">{t('mailDetail.empty')}</p>
         </div>
       </div>
     )
@@ -17,10 +20,10 @@ export default function MailDetail({ mail }) {
   return (
     <div className="card bg-base-100 shadow-md">
       <div className="card-body">
-        <h3 className="card-title">{mail.subject || '(no subject)'}</h3>
+        <h3 className="card-title">{mail.subject || t('mailDetail.noSubject')}</h3>
         <div className="text-sm text-base-content/70 mb-2">
-          <span>From: {mail.from}</span>
-          <span className="ml-4">To: {mail.to}</span>
+          <span>{t('mailDetail.from')} {mail.from}</span>
+          <span className="ml-4">{t('mailDetail.to')} {mail.to}</span>
           <span className="ml-4">{new Date(mail.created_at).toLocaleString()}</span>
         </div>
         <div className="divider my-1"></div>

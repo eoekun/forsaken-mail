@@ -5,14 +5,17 @@ import (
 	"strconv"
 
 	"forsaken-mail/internal/auth"
+	"forsaken-mail/internal/i18n"
 )
 
 // handleAuditLogs responds to GET /api/admin/audit-logs with paginated audit logs.
 func (rt *Router) handleAuditLogs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 		return
 	}
+
+	lang := i18n.LangFromRequest(r)
 
 	event := r.URL.Query().Get("event")
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
@@ -26,7 +29,7 @@ func (rt *Router) handleAuditLogs(w http.ResponseWriter, r *http.Request) {
 
 	logs, total, err := rt.auditStore.Query(event, offset, limit)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to query audit logs")
+		writeError(w, http.StatusInternalServerError, i18n.T(lang, "query_audit_failed"))
 		return
 	}
 
@@ -62,13 +65,13 @@ type auditLogJSON struct {
 // handleGetSettings responds to GET /api/admin/settings with all settings.
 func (rt *Router) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 		return
 	}
 
 	settings, err := rt.settings.GetAll()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to get settings")
+		writeError(w, http.StatusInternalServerError, i18n.T(i18n.LangFromRequest(r), "get_settings_failed"))
 		return
 	}
 
@@ -78,18 +81,20 @@ func (rt *Router) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 // handleUpdateSettings responds to PUT /api/admin/settings by updating settings.
 func (rt *Router) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 		return
 	}
 
+	lang := i18n.LangFromRequest(r)
+
 	var kvs map[string]string
 	if err := readJSON(r, &kvs); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, http.StatusBadRequest, i18n.T(lang, "invalid_request_body"))
 		return
 	}
 
 	if err := rt.settings.SetAll(kvs); err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to update settings")
+		writeError(w, http.StatusInternalServerError, i18n.T(lang, "update_settings_failed"))
 		return
 	}
 
@@ -97,7 +102,7 @@ func (rt *Router) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	email := auth.GetEmail(r)
 	ip := r.RemoteAddr
 	if err := rt.auditStore.Record("CONFIG_CHANGED", email, "{}", ip); err != nil {
-		writeError(w, http.StatusInternalServerError, "settings updated but audit log failed")
+		writeError(w, http.StatusInternalServerError, i18n.T(lang, "audit_log_failed"))
 		return
 	}
 
@@ -107,7 +112,7 @@ func (rt *Router) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 // handleStatus responds to GET /api/admin/status with system status information.
 func (rt *Router) handleStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 		return
 	}
 

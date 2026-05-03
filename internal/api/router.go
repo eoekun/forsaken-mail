@@ -7,6 +7,7 @@ import (
 	"forsaken-mail/internal/audit"
 	"forsaken-mail/internal/auth"
 	"forsaken-mail/internal/config"
+	"forsaken-mail/internal/i18n"
 	"forsaken-mail/internal/mail"
 	"forsaken-mail/internal/settings"
 	"forsaken-mail/internal/webhook"
@@ -76,6 +77,11 @@ func (rt *Router) Handler() http.Handler {
 	return securityHeaders(mux)
 }
 
+// handleHealth responds to GET /api/health with a simple OK status.
+func (rt *Router) handleHealth(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
 // routeAuth dispatches /auth/* routes based on the path suffix.
 func (rt *Router) routeAuth(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
@@ -123,7 +129,7 @@ func (rt *Router) routeAdminSettings(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPut:
 		rt.handleUpdateSettings(w, r)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 	}
 }
 

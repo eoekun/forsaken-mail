@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"forsaken-mail/internal/i18n"
 	"forsaken-mail/internal/settings"
 )
 
@@ -45,7 +46,8 @@ func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 
 		allowedEmails, err := m.settings.Get("allowed_emails")
 		if err != nil {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+			lang := i18n.LangFromRequest(r)
+			http.Error(w, i18n.T(lang, "internal_server_error"), http.StatusInternalServerError)
 			return
 		}
 
@@ -58,7 +60,8 @@ func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 				}
 			}
 			if !found {
-				http.Error(w, "forbidden", http.StatusForbidden)
+				lang := i18n.LangFromRequest(r)
+				http.Error(w, i18n.T(lang, "forbidden"), http.StatusForbidden)
 				return
 			}
 		}

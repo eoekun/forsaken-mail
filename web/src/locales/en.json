@@ -1,0 +1,90 @@
+{
+  "navbar": {
+    "admin": "Admin",
+    "logout": "Logout",
+    "language": "Language"
+  },
+  "login": {
+    "title": "Forsaken Mail",
+    "subtitle": "Sign in to access your temporary mailbox",
+    "unauthorized": "Your email is not authorized to access this service.",
+    "github": "Sign in with GitHub",
+    "google": "Sign in with Google"
+  },
+  "main": {},
+  "admin": {
+    "auditLogs": "Audit Logs",
+    "settings": "Settings",
+    "status": "Status"
+  },
+  "mailbox": {
+    "yourTempEmail": "Your temp email:",
+    "customShortId": "Enter custom short ID",
+    "set": "Set",
+    "cancel": "Cancel",
+    "connecting": "Connecting..."
+  },
+  "mailList": {
+    "title": "Mails",
+    "empty": "No emails yet. Waiting for incoming mail...",
+    "from": "From",
+    "subject": "Subject",
+    "time": "Time",
+    "noSubject": "(no subject)"
+  },
+  "mailDetail": {
+    "title": "Mail Detail",
+    "empty": "Select an email to view its content.",
+    "from": "From:",
+    "to": "To:",
+    "noSubject": "(no subject)"
+  },
+  "mailHistory": {
+    "recent": "Recent:"
+  },
+  "help": {
+    "title": "Help & Testing",
+    "dnsTest": "DNS Test",
+    "test": "Test",
+    "testing": "Testing...",
+    "webhookTest": "Webhook Test",
+    "webhookToken": "Webhook Token or URL",
+    "testMessage": "Test message (optional)",
+    "sendTest": "Send Test",
+    "sending": "Sending...",
+    "testEmail": "Test Email (QQ SMTP)",
+    "qqEmail": "QQ Email (e.g. 123456@qq.com)",
+    "qqAuthCode": "QQ SMTP Authorization Code",
+    "recipientShortId": "Recipient short ID (default: test@{{host}})",
+    "sendTestEmail": "Send Test Email",
+    "sendingViaQQ": "Sending via QQ SMTP...",
+    "enterWebhookToken": "Please enter a webhook token.",
+    "enterSenderAndCode": "Please enter sender email and auth code.",
+    "close": "Close",
+    "error": "Error: {{message}}"
+  },
+  "settings": {
+    "saved": "Settings saved!",
+    "error": "Error: {{message}}",
+    "saving": "Saving...",
+    "save": "Save Settings"
+  },
+  "status": {
+    "failed": "Failed to load status"
+  },
+  "notification": {
+    "newMail": "New mail from {{from}}"
+  },
+  "audit": {
+    "allEvents": "All Events",
+    "total": "Total: {{count}}",
+    "time": "Time",
+    "event": "Event",
+    "email": "Email",
+    "detail": "Detail",
+    "ip": "IP",
+    "previous": "Previous",
+    "next": "Next",
+    "pagination": "{{start}} - {{end}} of {{total}}"
+  }
+}

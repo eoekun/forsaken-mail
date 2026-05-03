@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/smtp"
 	"time"
+
+	"forsaken-mail/internal/i18n"
 )
 
 type testEmailRequest struct {
@@ -17,24 +19,26 @@ type testEmailRequest struct {
 
 func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
 		return
 	}
 
+	lang := i18n.LangFromRequest(r)
+
 	var req testEmailRequest
 	if err := readJSON(r, &req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, http.StatusBadRequest, i18n.T(lang, "invalid_request_body"))
 		return
 	}
 
 	if req.SenderEmail == "" || req.AuthCode == "" {
-		writeError(w, http.StatusBadRequest, "sender_email and auth_code are required")
+		writeError(w, http.StatusBadRequest, i18n.T(lang, "sender_auth_required"))
 		return
 	}
 
 	mailHost, err := rt.settings.Get("mail_host")
 	if err != nil || mailHost == "" {
-		writeError(w, http.StatusInternalServerError, "mail_host not configured")
+		writeError(w, http.StatusInternalServerError, i18n.T(lang, "mail_host_not_configured"))
 		return
 	}
 
@@ -56,7 +60,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,
-			"message": "Failed to connect to QQ SMTP: " + err.Error(),
+			"message": i18n.Tfmt(lang, "smtp_connect_failed", err),
 		})
 		return
 	}
@@ -66,7 +70,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,
-			"message": "TLS handshake failed: " + err.Error(),
+			"message": i18n.Tfmt(lang, "tls_handshake_failed", err),
 		})
 		return
 	}
@@ -76,7 +80,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 		tlsConn.Close()
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,
-			"message": "SMTP client error: " + err.Error(),
+			"message": i18n.Tfmt(lang, "smtp_client_error", err),
 		})
 		return
 	}
@@ -86,7 +90,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	if err := client.Auth(auth); err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,
-			"message": "SMTP auth failed (check email and auth code): " + err.Error(),
+			"message": i18n.Tfmt(lang, "smtp_auth_failed", err),
 		})
 		return
 	}
@@ -94,7 +98,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	if err := client.Mail(req.SenderEmail); err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,
-			"message": "MAIL FROM failed: " + err.Error(),
+			"message": i18n.Tfmt(lang, "mail_from_failed", err),
 		})
 		return
 	}
@@ -102,7 +106,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	if err := client.Rcpt(recipient); err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,
-			"message": "RCPT TO failed: " + err.Error(),
+			"message": i18n.Tfmt(lang, "rcpt_to_failed", err),
 		})
 		return
 	}
@@ -111,7 +115,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,
-			"message": "DATA command failed: " + err.Error(),
+			"message": i18n.Tfmt(lang, "data_command_failed", err),
 		})
 		return
 	}
@@ -119,7 +123,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	if _, err := wc.Write([]byte(msg)); err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,
-			"message": "Failed to write message: " + err.Error(),
+			"message": i18n.Tfmt(lang, "write_message_failed", err),
 		})
 		return
 	}
@@ -127,14 +131,14 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	if err := wc.Close(); err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,
-			"message": "Failed to close message: " + err.Error(),
+			"message": i18n.Tfmt(lang, "close_message_failed", err),
 		})
 		return
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"ok":        true,
-		"message":   fmt.Sprintf("Test email sent from %s to %s via QQ SMTP", req.SenderEmail, recipient),
+		"message":   i18n.Tfmt(lang, "test_email_sent", req.SenderEmail, recipient),
 		"sender":    req.SenderEmail,
 		"recipient": recipient,
 	})

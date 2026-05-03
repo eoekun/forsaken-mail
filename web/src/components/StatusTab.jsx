@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { apiGet } from '../lib/api'
 
 export default function StatusTab() {
+  const { t } = useTranslation()
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -14,7 +16,7 @@ export default function StatusTab() {
 
   if (loading) return <div className="flex justify-center"><span className="loading loading-spinner"></span></div>
 
-  if (!status) return <div className="alert alert-error">Failed to load status</div>
+  if (!status) return <div className="alert alert-error">{t('status.failed')}</div>
 
   return (
     <div className="card bg-base-100 shadow-md">
