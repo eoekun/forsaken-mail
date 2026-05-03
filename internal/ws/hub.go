@@ -257,11 +257,9 @@ func (h *Hub) HandleWS(w http.ResponseWriter, r *http.Request) {
 		send: make(chan []byte, 256),
 	}
 
-	ctx := conn.CloseRead(context.Background())
-
 	h.register <- client
 
-	go client.writePump(ctx)
+	go client.writePump(r.Context())
 	client.readPump(r.Context())
 }
 
