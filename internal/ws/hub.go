@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"regexp"
@@ -83,8 +84,11 @@ func (c *Client) readPump(ctx context.Context) {
 	for {
 		_, data, err := c.conn.Read(ctx)
 		if err != nil {
+			slog.Debug("websocket read error", "err", err)
 			return
 		}
+
+		slog.Debug("websocket received", "data", string(data))
 
 		var msg inboundMsg
 		if err := json.Unmarshal(data, &msg); err != nil {
@@ -98,6 +102,7 @@ func (c *Client) readPump(ctx context.Context) {
 			c.shortID = c.hub.generateShortID()
 			c.hub.register <- c
 			c.sendShortID(c.shortID)
+			slog.Info("websocket assigned shortid", "short_id", c.shortID)
 
 		case "set_shortid":
 			normalized := normalizeShortID(msg.ShortID)
@@ -113,6 +118,7 @@ func (c *Client) readPump(ctx context.Context) {
 			c.shortID = normalized
 			c.hub.register <- c
 			c.sendShortID(c.shortID)
+			slog.Info("websocket set shortid", "short_id", c.shortID)
 
 		default:
 			c.sendError("unknown message type")
@@ -248,6 +254,7 @@ func (h *Hub) HandleWS(w http.ResponseWriter, r *http.Request) {
 		CompressionMode: websocket.CompressionContextTakeover,
 	})
 	if err != nil {
+		slog.Error("websocket accept failed", "err", err, "remote", r.RemoteAddr)
 		return
 	}
 
@@ -257,10 +264,12 @@ func (h *Hub) HandleWS(w http.ResponseWriter, r *http.Request) {
 		send: make(chan []byte, 256),
 	}
 
+	slog.Info("websocket connected", "remote", r.RemoteAddr)
 	h.register <- client
 
 	go client.writePump(r.Context())
 	client.readPump(r.Context())
+	slog.Info("websocket disconnected", "remote", r.RemoteAddr)
 }
 
 // generateShortID produces a random human-readable short ID of the form
