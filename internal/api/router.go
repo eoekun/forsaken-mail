@@ -77,11 +77,6 @@ func (rt *Router) Handler() http.Handler {
 	return securityHeaders(mux)
 }
 
-// handleHealth responds to GET /api/health with a simple OK status.
-func (rt *Router) handleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-}
-
 // routeAuth dispatches /auth/* routes based on the path suffix.
 func (rt *Router) routeAuth(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
