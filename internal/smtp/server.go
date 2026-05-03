@@ -134,6 +134,7 @@ func (s *session) Data(r io.Reader) error {
 	}
 
 	s.router.Handle(s.from, s.to, env.GetHeader("Subject"), textBody, htmlBody, int64(len(raw)))
+	slog.Info("mail received", "from", s.from, "to", s.to, "subject", env.GetHeader("Subject"), "size", len(raw))
 	return nil
 }
 

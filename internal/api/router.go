@@ -66,6 +66,7 @@ func (rt *Router) Handler() http.Handler {
 	mux.Handle("/api/mails", rt.authMW.Wrap(http.HandlerFunc(rt.handleMails)))
 	mux.Handle("/api/domain-test", rt.authMW.Wrap(http.HandlerFunc(rt.handleDomainTest)))
 	mux.Handle("/api/webhook/test", rt.authMW.Wrap(http.HandlerFunc(rt.handleWebhookTest)))
+	mux.Handle("/api/test-email", rt.authMW.Wrap(http.HandlerFunc(rt.handleTestEmail)))
 	mux.Handle("/ws", rt.authMW.Wrap(http.HandlerFunc(rt.handleWS)))
 	mux.Handle("/api/admin/audit-logs", rt.authMW.Wrap(http.HandlerFunc(rt.handleAuditLogs)))
 	mux.Handle("/api/admin/settings", rt.authMW.Wrap(http.HandlerFunc(rt.routeAdminSettings)))

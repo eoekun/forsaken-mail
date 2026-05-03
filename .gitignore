@@ -83,3 +83,18 @@ node_modules
 
 # Mailin tmp directory
 .tmp
+
+# Environment and secrets
+.env
+.env.local
+
+# Build output
+embed/*
+!embed/.gitkeep
+
+# Runtime data
+data/
+
+# macOS
+.DS_Store
+._*

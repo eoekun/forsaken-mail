@@ -7,6 +7,10 @@ export default function HelpModal({ host }) {
   const [webhookMessage, setWebhookMessage] = useState('')
   const [webhookResult, setWebhookResult] = useState('')
   const [dnsDomain, setDnsDomain] = useState('')
+  const [testEmailSender, setTestEmailSender] = useState('')
+  const [testEmailAuthCode, setTestEmailAuthCode] = useState('')
+  const [testEmailShortID, setTestEmailShortID] = useState('')
+  const [testEmailResult, setTestEmailResult] = useState('')
 
   const runDnsTest = async () => {
     setDnsResult('Testing...')
@@ -33,6 +37,24 @@ export default function HelpModal({ host }) {
       setWebhookResult(JSON.stringify(data, null, 2))
     } catch (e) {
       setWebhookResult(`Error: ${e.message}`)
+    }
+  }
+
+  const runTestEmail = async () => {
+    if (!testEmailSender || !testEmailAuthCode) {
+      setTestEmailResult('Please enter sender email and auth code.')
+      return
+    }
+    setTestEmailResult('Sending via QQ SMTP...')
+    try {
+      const data = await apiPost('/api/test-email', {
+        sender_email: testEmailSender,
+        auth_code: testEmailAuthCode,
+        short_id: testEmailShortID || 'test',
+      })
+      setTestEmailResult(JSON.stringify(data, null, 2))
+    } catch (e) {
+      setTestEmailResult(`Error: ${e.message}`)
     }
   }
 
@@ -78,6 +100,31 @@ export default function HelpModal({ host }) {
           />
           <button className="btn btn-sm btn-primary mb-2" onClick={runWebhookTest}>Send Test</button>
           <pre className="bg-base-200 p-2 rounded text-xs overflow-auto max-h-40">{webhookResult}</pre>
+
+          <div className="divider">Test Email (QQ SMTP)</div>
+          <input
+            type="text"
+            className="input input-bordered input-sm w-full mb-2"
+            placeholder="QQ Email (e.g. 123456@qq.com)"
+            value={testEmailSender}
+            onChange={e => setTestEmailSender(e.target.value)}
+          />
+          <input
+            type="text"
+            className="input input-bordered input-sm w-full mb-2"
+            placeholder="QQ SMTP Authorization Code"
+            value={testEmailAuthCode}
+            onChange={e => setTestEmailAuthCode(e.target.value)}
+          />
+          <input
+            type="text"
+            className="input input-bordered input-sm w-full mb-2"
+            placeholder={`Recipient short ID (default: test@${host})`}
+            value={testEmailShortID}
+            onChange={e => setTestEmailShortID(e.target.value)}
+          />
+          <button className="btn btn-sm btn-primary mb-2" onClick={runTestEmail}>Send Test Email</button>
+          <pre className="bg-base-200 p-2 rounded text-xs overflow-auto max-h-40">{testEmailResult}</pre>
 
           <div className="modal-action">
             <form method="dialog">
