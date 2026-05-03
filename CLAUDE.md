@@ -96,3 +96,21 @@ For local development, run the Go backend and Vite dev server separately:
 2. `cd web && npm run dev` (serves frontend on :5173, proxies API/WS/auth to :3000)
 
 The Vite dev proxy is configured in `web/vite.config.js` to forward `/api`, `/ws`, and `/auth` paths.
+
+## Deployment
+
+Production server: `ubuntu@130.162.245.79:/home/ubuntu/forsaken-mail`
+
+Deploy steps:
+1. Commit and push to `origin/refactor/go-react`
+2. SSH to server: `ssh ubuntu@130.162.245.79`
+3. `cd /home/ubuntu/forsaken-mail && git pull origin refactor/go-react`
+4. `docker compose build && docker compose up -d`
+
+The server runs via Docker Compose (ports 25 for SMTP, 3081 for HTTP). No Go toolchain needed on the dev machine — all builds happen in Docker.
+
+## Important Notes
+
+- **No local Go**: The dev Mac does not have Go installed. All Go builds must happen via Docker or on the server.
+- **QQ SMTP test**: The `/api/test-email` endpoint sends test emails via QQ SMTP. Credentials are passed per-request from the frontend, not stored server-side. Never commit `.env` files or auth codes.
+- **Private data**: `.env` contains OAuth secrets, session keys, and webhook tokens. It is gitignored. Never expose these in commits or logs.
