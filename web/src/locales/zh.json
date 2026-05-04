@@ -1,26 +1,32 @@
 {
+  "common": {
+    "back": "返回"
+  },
   "navbar": {
     "admin": "管理",
     "logout": "退出",
     "language": "语言",
     "darkMode": "深色模式",
-    "lightMode": "浅色模式"
+    "lightMode": "浅色模式",
+    "menu": "菜单"
   },
   "login": {
     "title": "Forsaken Mail",
     "subtitle": "登录以访问您的临时邮箱",
     "unauthorized": "您的邮箱未被授权访问此服务。",
     "github": "使用 GitHub 登录",
-    "google": "使用 Google 登录"
+    "google": "使用 Google 登录",
+    "footer": "一次性邮箱服务"
   },
   "loginForm": {
     "username": "用户名",
-    "password": "密码",
+    "password": "***",
     "login": "登录",
     "loginFailed": "用户名或密码错误"
   },
   "main": {},
   "admin": {
+    "pageTitle": "管理面板",
     "auditLogs": "审计日志",
     "settings": "设置",
     "status": "状态"
@@ -90,10 +96,45 @@
     "saved": "设置已保存！",
     "error": "错误：{{message}}",
     "saving": "保存中...",
-    "save": "保存设置"
+    "save": "保存设置",
+    "sections": {
+      "general": "基本设置",
+      "security": "安全设置",
+      "notifications": "通知设置",
+      "retention": "保留策略",
+      "audit": "审计设置"
+    },
+    "labels": {
+      "mail_host": "邮件主机",
+      "site_title": "站点标题",
+      "allowed_emails": "允许的邮箱",
+      "keyword_blacklist": "关键词黑名单",
+      "dingtalk_webhook_token": "钉钉 Webhook Token",
+      "dingtalk_webhook_message": "钉钉 Webhook 消息",
+      "mail_retention_hours": "邮件保留时间（小时）",
+      "mail_max_count": "最大邮件数量",
+      "max_mail_size_bytes": "最大邮件大小（字节）",
+      "audit_retention_days": "审计日志保留天数",
+      "audit_max_count": "最大审计日志数量"
+    },
+    "descriptions": {
+      "mail_host": "用于生成邮箱地址的域名",
+      "site_title": "导航栏中显示的自定义标题",
+      "allowed_emails": "允许的邮箱域名或地址（逗号分隔）",
+      "keyword_blacklist": "用于拦截邮件的关键词（逗号分隔）",
+      "dingtalk_webhook_token": "钉钉 Webhook 通知的 Token 或 URL",
+      "dingtalk_webhook_message": "钉钉通知的自定义消息模板",
+      "mail_retention_hours": "旧邮件自动删除前的保留小时数",
+      "mail_max_count": "每个邮箱存储的最大邮件数",
+      "max_mail_size_bytes": "单封邮件的最大大小（字节）",
+      "audit_retention_days": "旧审计日志自动删除前的保留天数",
+      "audit_max_count": "审计日志的最大条目数"
+    }
   },
   "status": {
-    "failed": "加载状态失败"
+    "failed": "加载状态失败",
+    "refresh": "刷新",
+    "refreshing": "刷新中..."
   },
   "notification": {
     "newMail": "收到来自 {{from}} 的新邮件"

@@ -1,26 +1,32 @@
 {
+  "common": {
+    "back": "Back"
+  },
   "navbar": {
     "admin": "Admin",
     "logout": "Logout",
     "language": "Language",
     "darkMode": "Dark mode",
-    "lightMode": "Light mode"
+    "lightMode": "Light mode",
+    "menu": "Menu"
   },
   "login": {
     "title": "Forsaken Mail",
     "subtitle": "Sign in to access your temporary mailbox",
     "unauthorized": "Your email is not authorized to access this service.",
     "github": "Sign in with GitHub",
-    "google": "Sign in with Google"
+    "google": "Sign in with Google",
+    "footer": "Disposable email service"
   },
   "loginForm": {
     "username": "Username",
-    "password": "Password",
+    "password": "***",
     "login": "Sign In",
     "loginFailed": "Invalid username or password"
   },
   "main": {},
   "admin": {
+    "pageTitle": "Admin Panel",
     "auditLogs": "Audit Logs",
     "settings": "Settings",
     "status": "Status"
@@ -90,10 +96,45 @@
     "saved": "Settings saved!",
     "error": "Error: {{message}}",
     "saving": "Saving...",
-    "save": "Save Settings"
+    "save": "Save Settings",
+    "sections": {
+      "general": "General",
+      "security": "Security",
+      "notifications": "Notifications",
+      "retention": "Retention",
+      "audit": "Audit"
+    },
+    "labels": {
+      "mail_host": "Mail Host",
+      "site_title": "Site Title",
+      "allowed_emails": "Allowed Emails",
+      "keyword_blacklist": "Keyword Blacklist",
+      "dingtalk_webhook_token": "DingTalk Webhook Token",
+      "dingtalk_webhook_message": "DingTalk Webhook Message",
+      "mail_retention_hours": "Mail Retention (Hours)",
+      "mail_max_count": "Max Mail Count",
+      "max_mail_size_bytes": "Max Mail Size (Bytes)",
+      "audit_retention_days": "Audit Retention (Days)",
+      "audit_max_count": "Max Audit Count"
+    },
+    "descriptions": {
+      "mail_host": "The domain name used to generate email addresses",
+      "site_title": "Custom title displayed in the navigation bar",
+      "allowed_emails": "Comma-separated list of allowed email domains or addresses",
+      "keyword_blacklist": "Comma-separated keywords to block incoming mail",
+      "dingtalk_webhook_token": "Token or URL for DingTalk webhook notifications",
+      "dingtalk_webhook_message": "Custom message template for DingTalk notifications",
+      "mail_retention_hours": "Hours before old emails are automatically deleted",
+      "mail_max_count": "Maximum number of emails stored per mailbox",
+      "max_mail_size_bytes": "Maximum size of a single email in bytes",
+      "audit_retention_days": "Days before old audit logs are automatically deleted",
+      "audit_max_count": "Maximum number of audit log entries"
+    }
   },
   "status": {
-    "failed": "Failed to load status"
+    "failed": "Failed to load status",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing..."
   },
   "notification": {
     "newMail": "New mail from {{from}}"

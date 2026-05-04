@@ -107,3 +107,56 @@
     @apply btn rounded-lg font-medium;
   }
 }
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s ease-in-out infinite;
+}
+
+.gradient-login {
+  background: linear-gradient(-45deg, oklch(0.97 0.01 265), oklch(0.95 0.03 280), oklch(0.96 0.02 240), oklch(0.97 0.01 200));
+  background-size: 400% 400%;
+  animation: gradientShift 12s ease infinite;
+}
+
+.dark .gradient-login {
+  background: linear-gradient(-45deg, oklch(0.15 0.015 265), oklch(0.13 0.03 280), oklch(0.14 0.02 240), oklch(0.15 0.01 200));
+  background-size: 400% 400%;
+  animation: gradientShift 12s ease infinite;
+}

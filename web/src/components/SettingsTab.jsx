@@ -3,12 +3,30 @@ import { useTranslation } from 'react-i18next'
 import { apiGet, apiPut } from '../lib/api'
 import { Save, Check } from 'lucide-react'
 
-const EDITABLE_KEYS = [
-  'mail_host', 'site_title', 'allowed_emails', 'keyword_blacklist',
-  'dingtalk_webhook_token', 'dingtalk_webhook_message',
-  'mail_retention_hours', 'mail_max_count', 'max_mail_size_bytes',
-  'audit_retention_days', 'audit_max_count',
+const SETTING_SECTIONS = [
+  {
+    sectionKey: 'general',
+    keys: ['mail_host', 'site_title'],
+  },
+  {
+    sectionKey: 'security',
+    keys: ['allowed_emails', 'keyword_blacklist'],
+  },
+  {
+    sectionKey: 'notifications',
+    keys: ['dingtalk_webhook_token', 'dingtalk_webhook_message'],
+  },
+  {
+    sectionKey: 'retention',
+    keys: ['mail_retention_hours', 'mail_max_count', 'max_mail_size_bytes'],
+  },
+  {
+    sectionKey: 'audit',
+    keys: ['audit_retention_days', 'audit_max_count'],
+  },
 ]
+
+const ALL_KEYS = SETTING_SECTIONS.flatMap(s => s.keys)
 
 export default function SettingsTab() {
   const { t } = useTranslation()
@@ -33,7 +51,7 @@ export default function SettingsTab() {
     setSaving(true)
     try {
       const updates = {}
-      for (const key of EDITABLE_KEYS) {
+      for (const key of ALL_KEYS) {
         if (key in settings) updates[key] = settings[key]
       }
       await apiPut('/api/admin/settings', updates)
@@ -57,16 +75,30 @@ export default function SettingsTab() {
           <span>{toast}</span>
         </div>
       )}
-      <div className="space-y-4">
-        {EDITABLE_KEYS.map(key => (
-          <div key={key}>
-            <label className="block text-xs font-medium text-base-content/50 mb-1.5">{key}</label>
-            <input
-              type="text"
-              className="input-modern input-sm w-full"
-              value={settings[key] || ''}
-              onChange={e => setSettings(prev => ({ ...prev, [key]: e.target.value }))}
-            />
+      <div className="space-y-6">
+        {SETTING_SECTIONS.map(({ sectionKey, keys }) => (
+          <div key={sectionKey}>
+            <h3 className="text-sm font-semibold text-base-content/70 mb-3 pb-1.5 border-b border-base-300/40">
+              {t(`settings.sections.${sectionKey}`)}
+            </h3>
+            <div className="space-y-4">
+              {keys.map(key => (
+                <div key={key}>
+                  <label className="block text-xs font-medium text-base-content/60 mb-1">
+                    {t(`settings.labels.${key}`, { defaultValue: key })}
+                  </label>
+                  <input
+                    type="text"
+                    className="input-modern input-sm w-full"
+                    value={settings[key] || ''}
+                    onChange={e => setSettings(prev => ({ ...prev, [key]: e.target.value }))}
+                  />
+                  <p className="text-[11px] text-base-content/30 mt-1">
+                    {t(`settings.descriptions.${key}`, { defaultValue: '' })}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>

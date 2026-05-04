@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react'
 import Navbar from '../components/Navbar'
 import MailboxAddress from '../components/MailboxAddress'
 import MailboxTabs from '../components/MailboxTabs'
@@ -15,6 +16,17 @@ export default function MainPage() {
     tabs, activeShortId, setActiveShortId, subscribeToShortId, unsubscribeFromShortId,
     mails, selectedMail, setSelectedMail, clearMails, markMailAsRead,
   } = useWebSocket(config?.host)
+
+  const [mobileView, setMobileView] = useState('list')
+
+  const handleSelectMail = useCallback((mail) => {
+    setSelectedMail(mail)
+    setMobileView('detail')
+  }, [setSelectedMail])
+
+  const handleMobileBack = useCallback(() => {
+    setMobileView('list')
+  }, [])
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -41,15 +53,34 @@ export default function MainPage() {
             onAdd={requestNewShortId}
           />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mt-4">
-          <div className="lg:col-span-2">
+
+        {/* Mobile layout: toggle between list and detail */}
+        <div className="lg:hidden mt-4">
+          {mobileView === 'list' ? (
+            <MailList
+              mails={mails}
+              selectedMail={selectedMail}
+              onSelect={handleSelectMail}
+            />
+          ) : (
+            <MailDetail
+              mail={selectedMail}
+              onMailRead={markMailAsRead}
+              onBack={handleMobileBack}
+            />
+          )}
+        </div>
+
+        {/* Desktop layout: side-by-side grid */}
+        <div className="hidden lg:grid grid-cols-5 gap-4 mt-4">
+          <div className="col-span-2">
             <MailList
               mails={mails}
               selectedMail={selectedMail}
               onSelect={setSelectedMail}
             />
           </div>
-          <div className="lg:col-span-3">
+          <div className="col-span-3">
             <MailDetail mail={selectedMail} onMailRead={markMailAsRead} />
           </div>
         </div>

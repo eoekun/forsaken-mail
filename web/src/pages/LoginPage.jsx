@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../App'
-import { Mail } from 'lucide-react'
+import { Mail, User, Lock } from 'lucide-react'
 import { apiPost } from '../lib/api'
 
 export default function LoginPage() {
@@ -12,11 +12,11 @@ export default function LoginPage() {
   const isLocal = config?.authMode === 'local'
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-base-200 via-base-200 to-primary/5 px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center gradient-login px-4">
+      <div className="w-full max-w-sm animate-fade-in-up">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-            <Mail className="text-primary" size={28} />
+            <Mail className="text-primary animate-pulse-slow" size={28} />
           </div>
           <h1 className="text-2xl font-bold text-base-content">
             {config?.siteTitle || t('login.title')}
@@ -37,7 +37,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-base-content/30 mt-6">
-          Disposable email service
+          {t('login.footer')}
         </p>
       </div>
     </div>
@@ -94,24 +94,30 @@ function LocalLoginForm({ t }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <input
-        type="text"
-        className="input input-bordered w-full"
-        placeholder={t('loginForm.username')}
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        autoComplete="username"
-        required
-      />
-      <input
-        type="password"
-        className="input input-bordered w-full"
-        placeholder={t('loginForm.password')}
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        autoComplete="current-password"
-        required
-      />
+      <div className="relative">
+        <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30 z-10" />
+        <input
+          type="text"
+          className="input-modern input-sm w-full pl-9 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          placeholder={t('loginForm.username')}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          autoComplete="username"
+          required
+        />
+      </div>
+      <div className="relative">
+        <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30 z-10" />
+        <input
+          type="password"
+          className="input-modern input-sm w-full pl-9 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          placeholder={t('loginForm.password')}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+        />
+      </div>
       {error && (
         <div className="alert alert-error rounded-lg text-sm py-2">
           <span>{error}</span>
