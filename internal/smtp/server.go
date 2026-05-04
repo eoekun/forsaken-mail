@@ -95,8 +95,8 @@ type session struct {
 }
 
 func (s *session) Mail(from string, opts *goSmtp.MailOptions) error {
-	s.from = from
-	return nil
+	slog.Warn("rejected outbound mail attempt", "from", from, "ip", s.ip)
+	return fmt.Errorf("550 Sending mail is not allowed")
 }
 
 func (s *session) Rcpt(to string, opts *goSmtp.RcptOptions) error {
