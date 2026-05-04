@@ -24,6 +24,7 @@ type Config struct {
 	LogFile           string
 	LogMaxSizeMB      int
 	LogMaxBackups     int
+	CookieSecure      bool
 }
 
 func Load() (*Config, error) {
@@ -105,6 +106,10 @@ func Load() (*Config, error) {
 			return nil, fmt.Errorf("invalid LOG_MAX_BACKUPS: %w", err)
 		}
 		cfg.LogMaxBackups = n
+	}
+
+	if v := os.Getenv("COOKIE_SECURE"); v == "true" || v == "1" {
+		cfg.CookieSecure = true
 	}
 
 	if err := cfg.validate(); err != nil {

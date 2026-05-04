@@ -82,19 +82,16 @@ func (s *Store) Save(mail *Mail) error {
 	codesJSON, _ := json.Marshal(codes)
 	linksJSON, _ := json.Marshal(links)
 
-	result, err := s.db.Exec(
-		`INSERT INTO mails (short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, extracted_codes, extracted_links)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		mail.ShortID, mail.FromAddr, mail.ToAddr, mail.Subject, mail.TextBody, mail.HTMLBody, mail.RawSize, string(codesJSON), string(linksJSON),
-	)
+	now := time.Now()
+	err := s.db.QueryRow(
+		`INSERT INTO mails (short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, extracted_codes, extracted_links, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		 RETURNING id, created_at`,
+		mail.ShortID, mail.FromAddr, mail.ToAddr, mail.Subject, mail.TextBody, mail.HTMLBody, mail.RawSize, string(codesJSON), string(linksJSON), now,
+	).Scan(&mail.ID, &mail.CreatedAt)
 	if err != nil {
 		return err
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return err
-	}
-	mail.ID = id
 	return nil
 }
 

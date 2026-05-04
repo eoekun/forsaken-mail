@@ -21,6 +21,9 @@ FROM alpine:3.21
 RUN apk add --no-cache ca-certificates sqlite-libs
 COPY --from=backend /app/forsaken-mail /usr/local/bin/forsaken-mail
 COPY --from=frontend /embed /embed
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN mkdir -p /data && chown -R appuser:appgroup /data
 VOLUME /data
 EXPOSE 25 3000
+USER appuser
 CMD ["forsaken-mail"]

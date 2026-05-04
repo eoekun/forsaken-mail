@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"forsaken-mail/internal/i18n"
@@ -83,7 +84,10 @@ type Client struct {
 // to the hub. It runs until the connection is closed.
 func (c *Client) readPump(ctx context.Context) {
 	defer func() {
-		c.hub.unregister <- c
+		select {
+		case c.hub.unregister <- c:
+		case <-c.hub.done:
+		}
 		c.conn.Close(websocket.StatusNormalClosure, "bye")
 	}()
 
@@ -224,6 +228,8 @@ type Hub struct {
 	broadcast   chan *Message
 	blacklist   []string
 	mailHost    string
+	done        chan struct{}
+	clientCount atomic.Int64
 }
 
 // NewHub creates a new Hub. blacklist is a list of keywords that should not
@@ -238,6 +244,7 @@ func NewHub(blacklist []string, mailHost string) *Hub {
 		broadcast:   make(chan *Message, 256),
 		blacklist:   blacklist,
 		mailHost:    mailHost,
+		done:        make(chan struct{}),
 	}
 }
 
@@ -257,6 +264,7 @@ func (h *Hub) Run(ctx context.Context) {
 				}
 				set[client] = true
 			}
+			h.clientCount.Add(1)
 
 		case client := <-h.unregister:
 			for id := range client.shortIDs {
@@ -267,6 +275,7 @@ func (h *Hub) Run(ctx context.Context) {
 					}
 				}
 			}
+			h.clientCount.Add(-1)
 
 		case sub := <-h.subscribe:
 			sub.client.shortIDs[sub.shortID] = true
@@ -393,17 +402,14 @@ func normalizeShortID(id string) string {
 }
 
 // ClientCount returns the number of active clients (for health/debug).
-// This is safe to call from any goroutine but the value is approximate.
+// This is safe to call from any goroutine.
 func (h *Hub) ClientCount() int {
-	count := 0
-	for _, set := range h.clients {
-		count += len(set)
-	}
-	return count
+	return int(h.clientCount.Load())
 }
 
 // Close gracefully shuts down the hub by closing all client connections.
 func (h *Hub) Close() {
+	close(h.done)
 	for _, set := range h.clients {
 		for client := range set {
 			close(client.send)

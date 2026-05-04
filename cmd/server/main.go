@@ -102,7 +102,7 @@ func main() {
 	go hub.Run(ctx)
 
 	// Auth
-	sessions := auth.NewSessionManager(cfg.SessionSecret)
+	sessions := auth.NewSessionManager(cfg.SessionSecret, cfg.CookieSecure)
 	authMW := auth.NewMiddleware(sessions, settingsStore)
 
 	// Local auth (only when AUTH_MODE=local)
@@ -123,23 +123,31 @@ func main() {
 	}
 	httpServer.Handler = spaHandler(apiRouter.Handler(), "embed")
 
+	errChan := make(chan error, 2)
+
 	go func() {
 		slog.Info("HTTP server starting", "addr", httpServer.Addr)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("HTTP server error: %v", err)
+			errChan <- fmt.Errorf("HTTP server error: %w", err)
 		}
 	}()
 
 	go func() {
 		if err := smtpServer.ListenAndServe(smtpAddr); err != nil {
-			log.Fatalf("SMTP server error: %v", err)
+			errChan <- fmt.Errorf("SMTP server error: %w", err)
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	sig := <-quit
-	slog.Info("received shutdown signal", "signal", sig)
+	var sig os.Signal
+	select {
+	case sig = <-quit:
+		slog.Info("received shutdown signal", "signal", sig)
+	case err := <-errChan:
+		slog.Error("server error, initiating shutdown", "error", err)
+		sig = syscall.SIGTERM
+	}
 
 	cancel()
 

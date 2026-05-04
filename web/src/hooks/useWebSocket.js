@@ -11,6 +11,11 @@ export default function useWebSocket(host) {
   const wsRef = useRef(null)
   const reconnectTimer = useRef(null)
   const delayRef = useRef(1000)
+  const activeShortIdRef = useRef(activeShortId)
+
+  useEffect(() => {
+    activeShortIdRef.current = activeShortId
+  }, [activeShortId])
 
   // Derive tabs array from mailboxMap
   const tabs = Array.from(mailboxMap.entries()).map(([shortId, data]) => ({
@@ -91,7 +96,7 @@ export default function useWebSocket(host) {
           }
           case 'mail': {
             const mailData = msg.data
-            const targetId = msg.short_id || activeShortId
+            const targetId = msg.short_id || activeShortIdRef.current
             setMailboxMap(prev => {
               const next = new Map(prev)
               const existing = next.get(targetId) || { mails: [], unreadCount: 0 }

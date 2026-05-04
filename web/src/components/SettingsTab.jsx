@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { apiGet, apiPut } from '../lib/api'
 import { Save, Check } from 'lucide-react'
@@ -16,6 +16,11 @@ export default function SettingsTab() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
+  const toastTimerRef = useRef(null)
+
+  useEffect(() => {
+    return () => clearTimeout(toastTimerRef.current)
+  }, [])
 
   useEffect(() => {
     apiGet('/api/admin/settings')
@@ -33,7 +38,8 @@ export default function SettingsTab() {
       }
       await apiPut('/api/admin/settings', updates)
       setToast(t('settings.saved'))
-      setTimeout(() => setToast(''), 3000)
+      clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = setTimeout(() => setToast(''), 3000)
     } catch (e) {
       setToast(t('settings.error', { message: e.message }))
     } finally {

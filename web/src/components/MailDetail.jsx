@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import DOMPurify from 'dompurify'
 import { useTranslation } from 'react-i18next'
 import { Mail, FileText, Copy, Check, ExternalLink } from 'lucide-react'
@@ -7,6 +7,7 @@ import { apiPut } from '../lib/api'
 export default function MailDetail({ mail, onMailRead }) {
   const { t } = useTranslation()
   const [copiedCode, setCopiedCode] = useState(null)
+  const copiedTimerRef = useRef(null)
 
   useEffect(() => {
     if (mail?.id && !mail.is_read) {
@@ -15,12 +16,20 @@ export default function MailDetail({ mail, onMailRead }) {
     }
   }, [mail?.id])
 
+  useEffect(() => {
+    return () => clearTimeout(copiedTimerRef.current)
+  }, [])
+
   const copyCode = (code) => {
     navigator.clipboard.writeText(code).then(() => {
       setCopiedCode(code)
-      setTimeout(() => setCopiedCode(null), 2000)
+      clearTimeout(copiedTimerRef.current)
+      copiedTimerRef.current = setTimeout(() => setCopiedCode(null), 2000)
     })
   }
+
+  const htmlContent = mail?.html || mail?.text_body || ''
+  const sanitizedHtml = useMemo(() => DOMPurify.sanitize(htmlContent), [htmlContent])
 
   if (!mail) {
     return (
@@ -33,7 +42,6 @@ export default function MailDetail({ mail, onMailRead }) {
     )
   }
 
-  const htmlContent = mail.html || mail.text_body || ''
   const codes = mail.extracted_codes || []
   const links = mail.extracted_links || []
 
@@ -77,7 +85,7 @@ export default function MailDetail({ mail, onMailRead }) {
           {mail.html ? (
             <div
               className="prose prose-sm max-w-none prose-headings:text-base-content prose-p:text-base-content/80 prose-a:text-primary"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }}
+              dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
             />
           ) : (
             <pre className="whitespace-pre-wrap text-sm text-base-content/80 font-sans leading-relaxed">

@@ -20,12 +20,13 @@ type SessionData struct {
 }
 
 type SessionManager struct {
-	key []byte
+	key          []byte
+	cookieSecure bool
 }
 
-func NewSessionManager(secret string) *SessionManager {
+func NewSessionManager(secret string, cookieSecure bool) *SessionManager {
 	hash := sha256.Sum256([]byte(secret))
-	return &SessionManager{key: hash[:]}
+	return &SessionManager{key: hash[:], cookieSecure: cookieSecure}
 }
 
 func (sm *SessionManager) Encrypt(data *SessionData) (string, error) {
@@ -100,6 +101,7 @@ func (sm *SessionManager) SetCookie(w http.ResponseWriter, data *SessionData) {
 		Value:    encoded,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   sm.cookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   86400,
 	})
@@ -120,6 +122,7 @@ func (sm *SessionManager) ClearCookie(w http.ResponseWriter) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   sm.cookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Copy, Pencil, RefreshCw, Check } from 'lucide-react'
 
@@ -9,23 +9,29 @@ export default function MailboxAddress({ shortId, host, onRefresh, onSetShortId 
   const [editValue, setEditValue] = useState('')
   const [copied, setCopied] = useState(false)
   const inputRef = useRef(null)
+  const copiedTimerRef = useRef(null)
   const { t } = useTranslation()
 
   const address = shortId ? `${shortId}@${host}` : ''
+
+  useEffect(() => {
+    return () => clearTimeout(copiedTimerRef.current)
+  }, [])
 
   const handleCopy = async () => {
     if (!address) return
     try {
       await navigator.clipboard.writeText(address)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      clearTimeout(copiedTimerRef.current)
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
     } catch {}
   }
 
   const handleEdit = () => {
     setEditValue(shortId || '')
     setEditing(true)
-    setTimeout(() => inputRef.current?.focus(), 0)
+    requestAnimationFrame(() => inputRef.current?.focus())
   }
 
   const handleSubmit = (e) => {

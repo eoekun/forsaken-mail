@@ -11,6 +11,7 @@ import (
 	"forsaken-mail/internal/i18n"
 	"forsaken-mail/internal/mail"
 	"forsaken-mail/internal/settings"
+	"forsaken-mail/internal/smtp"
 	"forsaken-mail/internal/webhook"
 	"forsaken-mail/internal/ws"
 )
@@ -25,9 +26,10 @@ type Router struct {
 	auditStore *audit.Store
 	hub        *ws.Hub
 	webhook    *webhook.Sender
-	provider   auth.Provider
-	localAuth  *auth.LocalAuth // non-nil only when AUTH_MODE=local
-	startTime  time.Time
+	provider          auth.Provider
+	localAuth         *auth.LocalAuth // non-nil only when AUTH_MODE=local
+	startTime         time.Time
+	domainTestLimiter *smtp.RateLimiter
 }
 
 // NewRouter creates a new Router with the given dependencies.
@@ -47,17 +49,18 @@ func NewRouter(
 		provider, _ = auth.NewProvider(cfg)
 	}
 	return &Router{
-		cfg:        cfg,
-		sessions:   sessions,
-		authMW:     authMW,
-		mailStore:  mailStore,
-		settings:   settings,
-		auditStore: auditStore,
-		hub:        hub,
-		webhook:    webhookSender,
-		provider:   provider,
-		localAuth:  localAuth,
-		startTime:  time.Now().UTC(),
+		cfg:               cfg,
+		sessions:          sessions,
+		authMW:            authMW,
+		mailStore:         mailStore,
+		settings:          settings,
+		auditStore:        auditStore,
+		hub:               hub,
+		webhook:           webhookSender,
+		provider:          provider,
+		localAuth:         localAuth,
+		startTime:         time.Now().UTC(),
+		domainTestLimiter: smtp.NewRateLimiter(10.0/60.0, 10), // 10 requests per minute, burst 10
 	}
 }
 

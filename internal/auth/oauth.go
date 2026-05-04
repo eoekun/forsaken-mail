@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"forsaken-mail/internal/config"
 
@@ -14,6 +15,8 @@ import (
 	"golang.org/x/oauth2/github"
 	"golang.org/x/oauth2/google"
 )
+
+var httpClient = &http.Client{Timeout: 15 * time.Second}
 
 const (
 	EventLogin       = "LOGIN"
@@ -85,7 +88,7 @@ func (p *GitHubProvider) GetEmail(ctx context.Context, token *oauth2.Token) (str
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("fetch emails: %w", err)
 	}
@@ -142,7 +145,7 @@ func (p *GoogleProvider) GetEmail(ctx context.Context, token *oauth2.Token) (str
 	}
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("fetch userinfo: %w", err)
 	}
