@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -101,7 +103,13 @@ func (rt *Router) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	// Record audit event.
 	email := auth.GetEmail(r)
 	ip := clientIP(r)
-	if err := rt.auditStore.Record("CONFIG_CHANGED", email, "{}", ip); err != nil {
+	keys := make([]string, 0, len(kvs))
+	for k := range kvs {
+		keys = append(keys, k)
+	}
+	keysJSON, _ := json.Marshal(keys)
+	detail := fmt.Sprintf(`{"changed_keys":%s}`, string(keysJSON))
+	if err := rt.auditStore.Record("CONFIG_CHANGED", email, detail, ip); err != nil {
 		writeError(w, http.StatusInternalServerError, i18n.T(lang, "audit_log_failed"))
 		return
 	}

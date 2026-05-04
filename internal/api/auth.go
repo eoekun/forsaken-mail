@@ -147,7 +147,7 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	// Record audit event.
 	ip := clientIP(r)
-	if auditErr := rt.auditStore.Record(auth.EventLogin, email, "{}", ip); auditErr != nil {
+	if auditErr := rt.auditStore.Record(auth.EventLogin, email, fmt.Sprintf(`{"method":"oauth","provider":"%s"}`, provider), ip); auditErr != nil {
 		slog.Error("failed to record login audit", "error", auditErr)
 	}
 
@@ -168,7 +168,7 @@ func (rt *Router) handleLogout(w http.ResponseWriter, r *http.Request) {
 	// Record audit event.
 	if email != "" {
 		ip := clientIP(r)
-		if err := rt.auditStore.Record(auth.EventLogout, email, "{}", ip); err != nil {
+		if err := rt.auditStore.Record(auth.EventLogout, email, `{"action":"user_logout"}`, ip); err != nil {
 			slog.Error("failed to record logout audit", "error", err)
 		}
 	}
@@ -195,7 +195,7 @@ func (rt *Router) handleLocalLogin(w http.ResponseWriter, r *http.Request) {
 	ip := clientIP(r)
 
 	if rt.localAuth == nil || !rt.localAuth.Verify(req.Username, req.Password) {
-		if auditErr := rt.auditStore.Record(auth.EventLoginFailed, req.Username, "{}", ip); auditErr != nil {
+		if auditErr := rt.auditStore.Record(auth.EventLoginFailed, req.Username, `{"method":"local","reason":"invalid credentials"}`, ip); auditErr != nil {
 			slog.Error("failed to record login failed audit", "error", auditErr)
 		}
 		writeError(w, http.StatusUnauthorized, i18n.T(i18n.LangFromRequest(r), "login_failed"))
@@ -207,7 +207,7 @@ func (rt *Router) handleLocalLogin(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt: time.Now().Add(24 * time.Hour),
 	})
 
-	if auditErr := rt.auditStore.Record(auth.EventLogin, req.Username, "{}", ip); auditErr != nil {
+	if auditErr := rt.auditStore.Record(auth.EventLogin, req.Username, `{"method":"local"}`, ip); auditErr != nil {
 		slog.Error("failed to record login audit", "error", auditErr)
 	}
 
