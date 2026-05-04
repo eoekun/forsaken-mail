@@ -20,6 +20,10 @@ services:
       DINGTALK_WEBHOOK_TOKEN: ${DINGTALK_WEBHOOK_TOKEN:-}
       DINGTALK_WEBHOOK_MESSAGE: ${DINGTALK_WEBHOOK_MESSAGE:-new email received.}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      AUTH_MODE: ${AUTH_MODE:-oauth}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-}
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
       - "25:25"
