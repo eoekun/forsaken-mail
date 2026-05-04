@@ -116,14 +116,14 @@ func (s *session) Data(r io.Reader) error {
 
 	if len(raw) > maxSize {
 		slog.Warn("mail exceeds size limit", "from", s.from, "ip", s.ip, "size", len(raw), "limit", maxSize)
-		_ = s.audit.Record("MAIL_DROPPED", "", fmt.Sprintf("size %d exceeds limit %d", len(raw), maxSize), s.ip)
+		_ = s.audit.Record("MAIL_DROPPED", s.from, fmt.Sprintf(`{"reason":"size %d exceeds limit %d"}`, len(raw), maxSize), s.ip)
 		return nil // don't reject at SMTP level
 	}
 
 	env, err := enmime.ReadEnvelope(bytes.NewReader(raw))
 	if err != nil {
 		slog.Error("failed to parse mail envelope", "from", s.from, "ip", s.ip, "error", err)
-		_ = s.audit.Record("MAIL_DROPPED", "", err.Error(), s.ip)
+		_ = s.audit.Record("MAIL_DROPPED", s.from, fmt.Sprintf(`{"reason":"parse error: %s"}`, err.Error()), s.ip)
 		return nil
 	}
 
@@ -133,7 +133,7 @@ func (s *session) Data(r io.Reader) error {
 		htmlBody = textBody
 	}
 
-	s.router.Handle(s.from, s.to, env.GetHeader("Subject"), textBody, htmlBody, int64(len(raw)))
+	s.router.Handle(s.from, s.to, env.GetHeader("Subject"), textBody, htmlBody, int64(len(raw)), s.ip)
 	slog.Info("mail received", "from", s.from, "to", s.to, "subject", env.GetHeader("Subject"), "size", len(raw))
 	return nil
 }

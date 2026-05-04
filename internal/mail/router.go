@@ -1,6 +1,7 @@
 package mail
 
 import (
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -38,7 +39,8 @@ func NewRouter(mailStore *Store, hub *ws.Hub, settings *settings.Store, auditSto
 
 // Handle processes an incoming mail: saves it, pushes via WebSocket, records an
 // audit event, and sends a webhook notification for each valid recipient.
-func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBody string, rawSize int64) {
+// The senderIP parameter is the remote SMTP client IP for audit logging.
+func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBody string, rawSize int64, senderIP string) {
 	mailHost, err := r.settings.Get("mail_host")
 	if err != nil {
 		slog.Error("failed to get mail_host setting", "error", err)
@@ -91,7 +93,8 @@ func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBod
 		})
 
 		// Record audit event.
-		if err := r.auditStore.Record("MAIL_RECEIVED", addr, from, ""); err != nil {
+		detail := fmt.Sprintf(`{"from":"%s","subject":"%s","size":%d}`, from, subject, rawSize)
+		if err := r.auditStore.Record("MAIL_RECEIVED", addr, detail, senderIP); err != nil {
 			slog.Error("failed to record audit event", "error", err)
 		}
 
