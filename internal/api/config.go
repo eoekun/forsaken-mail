@@ -41,8 +41,8 @@ func (rt *Router) handleDomainTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientIP, _, _ := net.SplitHostPort(r.RemoteAddr)
-	if !rt.domainTestLimiter.Allow(clientIP) {
+	ip := clientIP(r)
+	if !rt.domainTestLimiter.Allow(ip) {
 		writeError(w, http.StatusTooManyRequests, i18n.T(i18n.LangFromRequest(r), "rate_limit_exceeded"))
 		return
 	}

@@ -130,7 +130,7 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		}
 		if !allowed {
 			slog.Warn("OAuth login rejected by email whitelist", "email", email, "provider", provider)
-			ip := r.RemoteAddr
+			ip := clientIP(r)
 			if auditErr := rt.auditStore.Record("LOGIN_REJECTED", email, `{"reason":"email not in whitelist"}`, ip); auditErr != nil {
 				slog.Error("failed to record rejected login audit", "error", auditErr)
 			}
@@ -146,7 +146,7 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Record audit event.
-	ip := r.RemoteAddr
+	ip := clientIP(r)
 	if auditErr := rt.auditStore.Record(auth.EventLogin, email, "{}", ip); auditErr != nil {
 		slog.Error("failed to record login audit", "error", auditErr)
 	}
@@ -167,7 +167,7 @@ func (rt *Router) handleLogout(w http.ResponseWriter, r *http.Request) {
 
 	// Record audit event.
 	if email != "" {
-		ip := r.RemoteAddr
+		ip := clientIP(r)
 		if err := rt.auditStore.Record(auth.EventLogout, email, "{}", ip); err != nil {
 			slog.Error("failed to record logout audit", "error", err)
 		}
@@ -192,7 +192,7 @@ func (rt *Router) handleLocalLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ip := r.RemoteAddr
+	ip := clientIP(r)
 
 	if rt.localAuth == nil || !rt.localAuth.Verify(req.Username, req.Password) {
 		if auditErr := rt.auditStore.Record(auth.EventLoginFailed, req.Username, "{}", ip); auditErr != nil {

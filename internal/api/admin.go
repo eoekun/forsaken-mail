@@ -100,7 +100,7 @@ func (rt *Router) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 
 	// Record audit event.
 	email := auth.GetEmail(r)
-	ip := r.RemoteAddr
+	ip := clientIP(r)
 	if err := rt.auditStore.Record("CONFIG_CHANGED", email, "{}", ip); err != nil {
 		writeError(w, http.StatusInternalServerError, i18n.T(lang, "audit_log_failed"))
 		return
