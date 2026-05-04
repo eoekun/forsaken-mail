@@ -18,7 +18,7 @@ RUN CGO_ENABLED=1 go build -o /app/forsaken-mail ./cmd/server
 
 FROM alpine:3.21
 #RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-RUN apk add --no-cache ca-certificates sqlite-libs
+RUN apk add --no-cache ca-certificates sqlite-libs tzdata
 COPY --from=backend /app/forsaken-mail /usr/local/bin/forsaken-mail
 COPY --from=frontend /embed /embed
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

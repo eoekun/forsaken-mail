@@ -24,6 +24,7 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-}
+      TZ: Asia/Shanghai
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
       - "25:25"

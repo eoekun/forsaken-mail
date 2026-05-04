@@ -95,11 +95,21 @@ type session struct {
 }
 
 func (s *session) Mail(from string, opts *goSmtp.MailOptions) error {
-	slog.Warn("rejected outbound mail attempt", "from", from, "ip", s.ip)
-	return fmt.Errorf("550 Sending mail is not allowed")
+	s.from = from
+	return nil
 }
 
 func (s *session) Rcpt(to string, opts *goSmtp.RcptOptions) error {
+	mailHost, err := s.settings.Get("mail_host")
+	if err != nil || mailHost == "" {
+		slog.Warn("mail_host not configured, rejecting recipient", "to", to, "ip", s.ip)
+		return fmt.Errorf("550 Mail service not configured")
+	}
+	_, domain := extractAddress(to)
+	if domain != mailHost {
+		slog.Warn("rejected outbound relay attempt", "from", s.from, "to", to, "ip", s.ip)
+		return fmt.Errorf("550 Relaying to %s is not allowed", domain)
+	}
 	s.to = append(s.to, to)
 	return nil
 }
@@ -159,6 +169,16 @@ func extractIP(c *goSmtp.Conn) string {
 		return addr
 	}
 	return host
+}
+
+// extractAddress splits an email address into local part and domain.
+func extractAddress(addr string) (local, domain string) {
+	for i := len(addr) - 1; i >= 0; i-- {
+		if addr[i] == '@' {
+			return addr[:i], addr[i+1:]
+		}
+	}
+	return "", ""
 }
 
 // getMaxMailSize reads the max_mail_size_bytes setting, falling back to the
