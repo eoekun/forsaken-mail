@@ -50,6 +50,12 @@ export default function App() {
       .finally(() => setLoading(false))
   }, [])
 
+  useEffect(() => {
+    if (config?.siteTitle) {
+      document.title = config.siteTitle
+    }
+  }, [config])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-base-200">
