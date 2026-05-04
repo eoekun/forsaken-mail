@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import i18n from '../i18n'
+import { apiGet } from '../lib/api'
 
 const TABS_STORAGE_KEY = 'mailbox_tabs_v1'
 
@@ -68,10 +69,12 @@ export default function useWebSocket(host) {
           }
           return next
         })
+        for (const id of savedTabs) fetchStoredMails(id, setMailboxMap)
       } else if (savedSingle) {
         ws.send(JSON.stringify({ type: 'subscribe', short_id: savedSingle }))
         setActiveShortId(savedSingle)
         setMailboxMap(new Map([[savedSingle, { mails: [], unreadCount: 0 }]]))
+        fetchStoredMails(savedSingle, setMailboxMap)
       } else {
         ws.send(JSON.stringify({ type: 'request_shortid' }))
       }
@@ -92,6 +95,7 @@ export default function useWebSocket(host) {
               return next
             })
             upsertHistory(id)
+            fetchStoredMails(id, setMailboxMap)
             break
           }
           case 'mail': {
@@ -157,6 +161,7 @@ export default function useWebSocket(host) {
       return next
     })
     upsertHistory(id)
+    fetchStoredMails(id, setMailboxMap)
   }, [])
 
   const unsubscribeFromShortId = useCallback((id) => {
@@ -232,6 +237,25 @@ export default function useWebSocket(host) {
     clearMails,
     markMailAsRead,
   }
+}
+
+function fetchStoredMails(shortId, setMailboxMap) {
+  apiGet(`/api/mails?shortId=${encodeURIComponent(shortId)}`)
+    .then(mails => {
+      if (!Array.isArray(mails) || mails.length === 0) return
+      setMailboxMap(prev => {
+        const next = new Map(prev)
+        const existing = next.get(shortId) || { mails: [], unreadCount: 0 }
+        const existingIds = new Set(existing.mails.map(m => m.id))
+        const newMails = mails.filter(m => !existingIds.has(m.id))
+        if (newMails.length === 0) return prev
+        const merged = [...existing.mails, ...newMails].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        const unreadCount = merged.filter(m => !m.is_read).length
+        next.set(shortId, { mails: merged, unreadCount })
+        return next
+      })
+    })
+    .catch(() => {})
 }
 
 function upsertHistory(shortId) {
