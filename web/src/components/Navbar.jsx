@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth, useTheme } from '../App'
-import { Sun, Moon, Shield, LogOut } from 'lucide-react'
+import { Sun, Moon, Shield, LogOut, Mail } from 'lucide-react'
 
 export default function Navbar() {
   const { config, user } = useAuth()
@@ -9,10 +9,11 @@ export default function Navbar() {
   const { t, i18n } = useTranslation()
 
   return (
-    <div className="sticky top-0 z-50 glass border-b border-base-300/40">
+    <div className="sticky top-0 z-50 glass border-b border-base-300 backdrop-blur-xl">
       <div className="navbar max-w-7xl mx-auto px-4 h-14">
         <div className="flex-1">
-          <Link to="/" className="text-lg font-semibold text-base-content hover:text-primary transition-colors">
+          <Link to="/" className="flex items-center gap-2 text-lg font-semibold text-base-content hover:text-primary transition-colors">
+            <Mail size={20} />
             {config?.siteTitle || 'Forsaken Mail'}
           </Link>
         </div>
@@ -48,8 +49,9 @@ export default function Navbar() {
 
           <div className="w-px h-5 bg-base-300/60 mx-1 hidden sm:block"></div>
 
-          <Link to="/admin" className="btn btn-ghost btn-sm btn-circle" title={t('navbar.admin')}>
+          <Link to="/admin" className="btn btn-ghost btn-sm gap-1" title={t('navbar.admin')}>
             <Shield size={16} />
+            <span className="hidden sm:inline">{t('navbar.admin')}</span>
           </Link>
           <a href="/auth/logout" className="btn btn-ghost btn-sm btn-circle" title={t('navbar.logout')}>
             <LogOut size={16} />

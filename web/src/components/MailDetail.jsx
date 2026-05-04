@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import DOMPurify from 'dompurify'
 import { useTranslation } from 'react-i18next'
-import { Mail, FileText, Copy, Check, ExternalLink } from 'lucide-react'
+import { useToast } from './Toast'
+import { Mail, FileText, Copy, Check, ExternalLink, ArrowLeft } from 'lucide-react'
 import { apiPut } from '../lib/api'
 
-export default function MailDetail({ mail, onMailRead }) {
+export default function MailDetail({ mail, onMailRead, onBack }) {
   const { t } = useTranslation()
+  const toast = useToast()
   const [copiedCode, setCopiedCode] = useState(null)
   const copiedTimerRef = useRef(null)
 
@@ -23,6 +25,7 @@ export default function MailDetail({ mail, onMailRead }) {
   const copyCode = (code) => {
     navigator.clipboard.writeText(code).then(() => {
       setCopiedCode(code)
+      toast.success(t('mailDetail.codeCopied'))
       clearTimeout(copiedTimerRef.current)
       copiedTimerRef.current = setTimeout(() => setCopiedCode(null), 2000)
     })
@@ -35,7 +38,7 @@ export default function MailDetail({ mail, onMailRead }) {
     return (
       <div className="card-modern h-full">
         <div className="flex flex-col items-center justify-center h-full py-16">
-          <FileText size={36} className="text-base-content/10 mb-3" />
+          <Mail size={64} className="text-base-content/10 mb-3 opacity-20" />
           <p className="text-sm text-base-content/30">{t('mailDetail.empty')}</p>
         </div>
       </div>
@@ -48,17 +51,40 @@ export default function MailDetail({ mail, onMailRead }) {
   return (
     <div className="card-modern">
       <div className="p-5">
+        {onBack && (
+          <button
+            className="btn btn-sm btn-ghost mb-3 lg:hidden"
+            onClick={onBack}
+          >
+            <ArrowLeft size={16} />
+            {t('mailDetail.back')}
+          </button>
+        )}
+
+        <div className="mb-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-lg font-semibold text-base-content">{mail.from}</span>
+            <span className="text-sm text-base-content/50 shrink-0 tabular-nums">
+              {new Date(mail.created_at).toLocaleString()}
+            </span>
+          </div>
+          <p className="text-sm text-base-content/40">{t('mailDetail.to')} {mail.to}</p>
+          <h2 className="text-base font-medium text-base-content mt-1">
+            {mail.subject || t('mailDetail.noSubject')}
+          </h2>
+        </div>
+
         {codes.length > 0 && (
-          <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-            <p className="text-xs font-medium text-primary/70 mb-2">{t('mailDetail.verificationCodes')}</p>
+          <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-2">{t('mailDetail.verificationCodes')}</p>
             <div className="flex flex-wrap gap-2">
               {codes.map((code) => (
                 <button
                   key={code}
                   onClick={() => copyCode(code)}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-base-100 border border-primary/30 rounded-md hover:bg-primary/10 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-base-100 border border-emerald-300 dark:border-emerald-700 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors cursor-pointer"
                 >
-                  <span className="text-xl font-mono font-bold text-primary tracking-wider">{code}</span>
+                  <span className="text-2xl font-mono font-bold text-emerald-700 dark:text-emerald-400 tracking-wider">{code}</span>
                   {copiedCode === code ? (
                     <Check size={14} className="text-success" />
                   ) : (
@@ -70,17 +96,6 @@ export default function MailDetail({ mail, onMailRead }) {
           </div>
         )}
 
-        <h2 className="text-lg font-semibold text-base-content mb-3 leading-snug">
-          {mail.subject || t('mailDetail.noSubject')}
-        </h2>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-base-content/50 mb-4">
-          <span className="flex items-center gap-1">
-            <Mail size={12} />
-            {mail.from}
-          </span>
-          <span>{t('mailDetail.to')} {mail.to}</span>
-          <span className="tabular-nums">{new Date(mail.created_at).toLocaleString()}</span>
-        </div>
         <div className="border-t border-base-300/40 pt-4">
           {mail.html ? (
             <div
@@ -104,7 +119,7 @@ export default function MailDetail({ mail, onMailRead }) {
                   href={link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-primary/80 hover:text-primary truncate"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200/60 hover:bg-base-200 text-xs text-primary/80 hover:text-primary truncate transition-colors"
                 >
                   <ExternalLink size={12} className="shrink-0" />
                   <span className="truncate">{link}</span>

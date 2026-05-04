@@ -84,7 +84,19 @@
   }
 
   .card-modern {
-    @apply bg-base-100 rounded-xl border border-base-300/60;
+    @apply bg-base-100 rounded-xl border border-base-300/60 shadow-sm dark:shadow-gray-800/50;
+  }
+
+  .transition-interactive {
+    @apply transition-all duration-200;
+  }
+
+  .hover-lift {
+    @apply hover:-translate-y-0.5 hover:shadow-md;
+  }
+
+  .active-press {
+    @apply active:scale-[0.98];
   }
 
   .input-modern {

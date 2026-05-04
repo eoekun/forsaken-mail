@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { apiGet, apiPost } from '../lib/api'
-import { HelpCircle, Globe, Webhook, Mail, X } from 'lucide-react'
+import { HelpCircle, Globe, Webhook, Mail, X, Eye, EyeOff } from 'lucide-react'
 
 export default function HelpModal({ host }) {
   const { t } = useTranslation()
@@ -14,6 +14,7 @@ export default function HelpModal({ host }) {
   const [testEmailAuthCode, setTestEmailAuthCode] = useState('')
   const [testEmailShortID, setTestEmailShortID] = useState('')
   const [testEmailResult, setTestEmailResult] = useState('')
+  const [showAuthCode, setShowAuthCode] = useState(false)
 
   const runDnsTest = async () => {
     setDnsResult(t('help.testing'))
@@ -141,13 +142,23 @@ export default function HelpModal({ host }) {
                 value={testEmailSender}
                 onChange={e => setTestEmailSender(e.target.value)}
               />
-              <input
-                type="text"
-                className="input-modern input-sm w-full mb-2"
-                placeholder={t('help.qqAuthCode')}
-                value={testEmailAuthCode}
-                onChange={e => setTestEmailAuthCode(e.target.value)}
-              />
+              <div className="relative mb-2">
+                <input
+                  type={showAuthCode ? 'text' : 'password'}
+                  className="input-modern input-sm w-full pr-9"
+                  placeholder={t('help.qqAuthCode')}
+                  value={testEmailAuthCode}
+                  onChange={e => setTestEmailAuthCode(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content/70 transition-colors"
+                  onClick={() => setShowAuthCode(v => !v)}
+                  title={showAuthCode ? t('help.hideAuthCode') : t('help.showAuthCode')}
+                >
+                  {showAuthCode ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
               <input
                 type="text"
                 className="input-modern input-sm w-full mb-2"

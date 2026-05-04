@@ -30,7 +30,8 @@
     "customShortId": "输入自定义短 ID",
     "set": "确定",
     "cancel": "取消",
-    "connecting": "连接中..."
+    "connecting": "连接中...",
+    "copied": "已复制！"
   },
   "mailList": {
     "title": "邮件列表",
@@ -38,7 +39,11 @@
     "from": "发件人",
     "subject": "主题",
     "time": "时间",
-    "noSubject": "(无主题)"
+    "noSubject": "(无主题)",
+    "searchPlaceholder": "搜索邮件...",
+    "noResults": "没有匹配的邮件",
+    "timeJustNow": "刚刚",
+    "timeMinutesAgo": "{{count}}分钟前"
   },
   "mailDetail": {
     "title": "邮件详情",
@@ -47,13 +52,16 @@
     "to": "收件人：",
     "noSubject": "(无主题)",
     "verificationCodes": "验证码",
-    "extractedLinks": "链接"
+    "extractedLinks": "链接",
+    "back": "返回",
+    "codeCopied": "验证码已复制！"
   },
   "mailHistory": {
     "recent": "最近："
   },
   "mailboxTabs": {
-    "add": "添加邮箱"
+    "add": "添加邮箱",
+    "closeAll": "全部关闭"
   },
   "help": {
     "title": "帮助与测试",
@@ -74,7 +82,9 @@
     "enterWebhookToken": "请输入 Webhook Token。",
     "enterSenderAndCode": "请输入发件邮箱和授权码。",
     "close": "关闭",
-    "error": "错误：{{message}}"
+    "error": "错误：{{message}}",
+    "showAuthCode": "显示授权码",
+    "hideAuthCode": "隐藏授权码"
   },
   "settings": {
     "saved": "设置已保存！",

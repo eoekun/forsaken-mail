@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { apiGet } from './lib/api'
+import { ToastProvider } from './components/Toast'
 import LoginPage from './pages/LoginPage'
 import MainPage from './pages/MainPage'
 import AdminPage from './pages/AdminPage'
@@ -72,14 +73,16 @@ export default function App() {
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <AuthContext.Provider value={{ config, user, isAuthenticated }}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
-            <Route path="/" element={isAuthenticated ? <MainPage /> : <Navigate to="/login" />} />
-            <Route path="/admin" element={isAuthenticated ? <AdminPage /> : <Navigate to="/login" />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
+              <Route path="/" element={isAuthenticated ? <MainPage /> : <Navigate to="/login" />} />
+              <Route path="/admin" element={isAuthenticated ? <AdminPage /> : <Navigate to="/login" />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
       </AuthContext.Provider>
     </ThemeContext.Provider>
   )
