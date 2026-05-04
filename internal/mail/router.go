@@ -79,13 +79,15 @@ func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBod
 
 		// Push to WebSocket clients watching this shortID.
 		r.hub.SendTo(shortID, ws.MailData{
-			ID:        m.ID,
-			From:      from,
-			To:        addr,
-			Subject:   subject,
-			HTML:      htmlBody,
-			IsRead:    false,
-			CreatedAt: m.CreatedAt.Format(time.RFC3339),
+			ID:             m.ID,
+			From:           from,
+			To:             addr,
+			Subject:        subject,
+			HTML:           htmlBody,
+			IsRead:         false,
+			ExtractedCodes: m.ExtractedCodes,
+			ExtractedLinks: m.ExtractedLinks,
+			CreatedAt:      m.CreatedAt.Format(time.RFC3339),
 		})
 
 		// Record audit event.

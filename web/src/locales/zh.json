@@ -39,10 +39,15 @@
     "empty": "请选择一封邮件查看内容。",
     "from": "发件人：",
     "to": "收件人：",
-    "noSubject": "(无主题)"
+    "noSubject": "(无主题)",
+    "verificationCodes": "验证码",
+    "extractedLinks": "链接"
   },
   "mailHistory": {
     "recent": "最近："
+  },
+  "mailboxTabs": {
+    "add": "添加邮箱"
   },
   "help": {
     "title": "帮助与测试",

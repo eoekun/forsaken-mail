@@ -1,13 +1,33 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import i18n from '../i18n'
 
+const TABS_STORAGE_KEY = 'mailbox_tabs_v1'
+
 export default function useWebSocket(host) {
-  const [shortId, setShortId] = useState('')
-  const [mails, setMails] = useState([])
+  // Map<shortId, {mails: [], unreadCount: number}>
+  const [mailboxMap, setMailboxMap] = useState(new Map())
+  const [activeShortId, setActiveShortId] = useState('')
   const [selectedMail, setSelectedMail] = useState(null)
   const wsRef = useRef(null)
   const reconnectTimer = useRef(null)
   const delayRef = useRef(1000)
+
+  // Derive tabs array from mailboxMap
+  const tabs = Array.from(mailboxMap.entries()).map(([shortId, data]) => ({
+    shortId,
+    unreadCount: data.unreadCount,
+  }))
+
+  // Get mails for the active tab
+  const mails = mailboxMap.get(activeShortId)?.mails || []
+
+  // Save tabs to localStorage whenever they change
+  useEffect(() => {
+    const shortIds = Array.from(mailboxMap.keys())
+    try {
+      localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(shortIds))
+    } catch {}
+  }, [mailboxMap])
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
@@ -18,9 +38,35 @@ export default function useWebSocket(host) {
 
     ws.onopen = () => {
       delayRef.current = 1000
-      const saved = localStorage.getItem('shortid')
-      if (saved) {
-        ws.send(JSON.stringify({ type: 'set_shortid', short_id: saved }))
+      // Restore saved tabs
+      let savedTabs = []
+      try {
+        const raw = localStorage.getItem(TABS_STORAGE_KEY)
+        savedTabs = raw ? JSON.parse(raw) : []
+        if (!Array.isArray(savedTabs)) savedTabs = []
+      } catch {}
+
+      const savedSingle = localStorage.getItem('shortid')
+      if (savedTabs.length > 0) {
+        // Subscribe to all saved tabs
+        for (const id of savedTabs) {
+          ws.send(JSON.stringify({ type: 'subscribe', short_id: id }))
+        }
+        setActiveShortId(prev => prev && savedTabs.includes(prev) ? prev : savedTabs[0])
+        // Initialize mailboxMap for saved tabs
+        setMailboxMap(prev => {
+          const next = new Map(prev)
+          for (const id of savedTabs) {
+            if (!next.has(id)) {
+              next.set(id, { mails: [], unreadCount: 0 })
+            }
+          }
+          return next
+        })
+      } else if (savedSingle) {
+        ws.send(JSON.stringify({ type: 'subscribe', short_id: savedSingle }))
+        setActiveShortId(savedSingle)
+        setMailboxMap(new Map([[savedSingle, { mails: [], unreadCount: 0 }]]))
       } else {
         ws.send(JSON.stringify({ type: 'request_shortid' }))
       }
@@ -30,18 +76,37 @@ export default function useWebSocket(host) {
       try {
         const msg = JSON.parse(event.data)
         switch (msg.type) {
-          case 'shortid':
-            setShortId(msg.short_id)
-            localStorage.setItem('shortid', msg.short_id)
-            upsertHistory(msg.short_id)
+          case 'shortid': {
+            const id = msg.short_id
+            setActiveShortId(id)
+            setMailboxMap(prev => {
+              const next = new Map(prev)
+              if (!next.has(id)) {
+                next.set(id, { mails: [], unreadCount: 0 })
+              }
+              return next
+            })
+            upsertHistory(id)
             break
-          case 'mail':
-            setMails(prev => [msg.data, ...prev])
+          }
+          case 'mail': {
+            const mailData = msg.data
+            const targetId = msg.short_id || activeShortId
+            setMailboxMap(prev => {
+              const next = new Map(prev)
+              const existing = next.get(targetId) || { mails: [], unreadCount: 0 }
+              next.set(targetId, {
+                mails: [mailData, ...existing.mails],
+                unreadCount: existing.unreadCount + 1,
+              })
+              return next
+            })
             // Browser notification
             if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification(i18n.t('notification.newMail', { from: msg.data.from }))
+              new Notification(i18n.t('notification.newMail', { from: mailData.from }))
             }
             break
+          }
           case 'error':
             console.error('WS error:', msg.message)
             break
@@ -61,11 +126,10 @@ export default function useWebSocket(host) {
     ws.onerror = () => {
       ws.close()
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     connect()
-    // Request notification permission
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
@@ -75,35 +139,87 @@ export default function useWebSocket(host) {
     }
   }, [connect])
 
-  const sendShortId = useCallback((id) => {
+  const subscribeToShortId = useCallback((id) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: 'set_shortid', short_id: id }))
-      setMails([])
-      setSelectedMail(null)
+      wsRef.current.send(JSON.stringify({ type: 'subscribe', short_id: id }))
     }
+    setActiveShortId(id)
+    setMailboxMap(prev => {
+      const next = new Map(prev)
+      if (!next.has(id)) {
+        next.set(id, { mails: [], unreadCount: 0 })
+      }
+      return next
+    })
+    upsertHistory(id)
   }, [])
+
+  const unsubscribeFromShortId = useCallback((id) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'unsubscribe', short_id: id }))
+    }
+    setMailboxMap(prev => {
+      const next = new Map(prev)
+      next.delete(id)
+      return next
+    })
+    // If we closed the active tab, switch to the first remaining
+    setActiveShortId(prev => {
+      if (prev !== id) return prev
+      // Can't read new map here, so we'll fix in useEffect
+      return ''
+    })
+    setSelectedMail(null)
+  }, [])
+
+  // Fix activeShortId after tab close
+  useEffect(() => {
+    if (!activeShortId && mailboxMap.size > 0) {
+      setActiveShortId(mailboxMap.keys().next().value)
+    }
+  }, [activeShortId, mailboxMap])
 
   const requestNewShortId = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'request_shortid' }))
-      setMails([])
-      setSelectedMail(null)
     }
   }, [])
 
   const clearMails = useCallback(() => {
-    setMails([])
+    setMailboxMap(prev => {
+      const next = new Map(prev)
+      const existing = next.get(activeShortId)
+      if (existing) {
+        next.set(activeShortId, { ...existing, mails: [] })
+      }
+      return next
+    })
     setSelectedMail(null)
-  }, [])
+  }, [activeShortId])
 
   const markMailAsRead = useCallback((id) => {
-    setMails(prev => prev.map(m => m.id === id ? { ...m, is_read: true } : m))
+    setMailboxMap(prev => {
+      const next = new Map(prev)
+      const existing = next.get(activeShortId)
+      if (existing) {
+        next.set(activeShortId, {
+          ...existing,
+          mails: existing.mails.map(m => m.id === id ? { ...m, is_read: true } : m),
+          unreadCount: Math.max(0, existing.unreadCount - (existing.mails.find(m => m.id === id && !m.is_read) ? 1 : 0)),
+        })
+      }
+      return next
+    })
     setSelectedMail(prev => prev?.id === id ? { ...prev, is_read: true } : prev)
-  }, [])
+  }, [activeShortId])
 
   return {
-    shortId,
-    setShortId: sendShortId,
+    shortId: activeShortId,
+    tabs,
+    activeShortId,
+    setActiveShortId: subscribeToShortId,
+    subscribeToShortId,
+    unsubscribeFromShortId,
     requestNewShortId,
     mails,
     selectedMail,

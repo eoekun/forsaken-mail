@@ -11,14 +11,16 @@ import (
 
 // emailResponse is the JSON shape returned by the email API.
 type emailResponse struct {
-	ID        int64  `json:"id"`
-	From      string `json:"from"`
-	To        string `json:"to"`
-	Subject   string `json:"subject"`
-	TextBody  string `json:"text_body"`
-	HTMLBody  string `json:"html_body"`
-	IsRead    bool   `json:"is_read"`
-	CreatedAt string `json:"created_at"`
+	ID             int64    `json:"id"`
+	From           string   `json:"from"`
+	To             string   `json:"to"`
+	Subject        string   `json:"subject"`
+	TextBody       string   `json:"text_body"`
+	HTMLBody       string   `json:"html_body"`
+	IsRead         bool     `json:"is_read"`
+	ExtractedCodes []string `json:"extracted_codes"`
+	ExtractedLinks []string `json:"extracted_links"`
+	CreatedAt      string   `json:"created_at"`
 }
 
 // emailListResponse wraps a list of emails with metadata.
@@ -97,14 +99,16 @@ func (rt *Router) handleListEmails(w http.ResponseWriter, r *http.Request, short
 	}
 	for _, m := range mails {
 		resp.Emails = append(resp.Emails, emailResponse{
-			ID:        m.ID,
-			From:      m.FromAddr,
-			To:        m.ToAddr,
-			Subject:   m.Subject,
-			TextBody:  m.TextBody,
-			HTMLBody:  m.HTMLBody,
-			IsRead:    m.IsRead,
-			CreatedAt: m.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+			ID:             m.ID,
+			From:           m.FromAddr,
+			To:             m.ToAddr,
+			Subject:        m.Subject,
+			TextBody:       m.TextBody,
+			HTMLBody:       m.HTMLBody,
+			IsRead:         m.IsRead,
+			ExtractedCodes: m.ExtractedCodes,
+			ExtractedLinks: m.ExtractedLinks,
+			CreatedAt:      m.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 		})
 	}
 
@@ -126,14 +130,16 @@ func (rt *Router) handleGetEmail(w http.ResponseWriter, r *http.Request, id int6
 	}
 
 	writeJSON(w, http.StatusOK, emailResponse{
-		ID:        m.ID,
-		From:      m.FromAddr,
-		To:        m.ToAddr,
-		Subject:   m.Subject,
-		TextBody:  m.TextBody,
-		HTMLBody:  m.HTMLBody,
-		IsRead:    m.IsRead,
-		CreatedAt: m.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		ID:             m.ID,
+		From:           m.FromAddr,
+		To:             m.ToAddr,
+		Subject:        m.Subject,
+		TextBody:       m.TextBody,
+		HTMLBody:       m.HTMLBody,
+		IsRead:         m.IsRead,
+		ExtractedCodes: m.ExtractedCodes,
+		ExtractedLinks: m.ExtractedLinks,
+		CreatedAt:      m.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	})
 }
 

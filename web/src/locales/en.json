@@ -39,10 +39,15 @@
     "empty": "Select an email to view its content.",
     "from": "From:",
     "to": "To:",
-    "noSubject": "(no subject)"
+    "noSubject": "(no subject)",
+    "verificationCodes": "Verification Codes",
+    "extractedLinks": "Links"
   },
   "mailHistory": {
     "recent": "Recent:"
+  },
+  "mailboxTabs": {
+    "add": "Add Mailbox"
   },
   "help": {
     "title": "Help & Testing",

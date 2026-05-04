@@ -2,6 +2,7 @@ package mail
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -17,6 +18,8 @@ CREATE TABLE IF NOT EXISTS mails (
     html_body TEXT NOT NULL DEFAULT '',
     raw_size INTEGER NOT NULL DEFAULT 0,
     is_read INTEGER NOT NULL DEFAULT 0,
+    extracted_codes TEXT NOT NULL DEFAULT '[]',
+    extracted_links TEXT NOT NULL DEFAULT '[]',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 `
@@ -31,16 +34,18 @@ CREATE INDEX IF NOT EXISTS idx_mails_created ON mails(created_at);
 
 // Mail represents a single email message stored in the database.
 type Mail struct {
-	ID        int64     `json:"id"`
-	ShortID   string    `json:"short_id"`
-	FromAddr  string    `json:"from_addr"`
-	ToAddr    string    `json:"to_addr"`
-	Subject   string    `json:"subject"`
-	TextBody  string    `json:"text_body"`
-	HTMLBody  string    `json:"html_body"`
-	RawSize   int64     `json:"raw_size"`
-	IsRead    bool      `json:"is_read"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            int64     `json:"id"`
+	ShortID       string    `json:"short_id"`
+	FromAddr      string    `json:"from_addr"`
+	ToAddr        string    `json:"to_addr"`
+	Subject       string    `json:"subject"`
+	TextBody      string    `json:"text_body"`
+	HTMLBody      string    `json:"html_body"`
+	RawSize       int64     `json:"raw_size"`
+	IsRead        bool      `json:"is_read"`
+	ExtractedCodes []string `json:"extracted_codes"`
+	ExtractedLinks []string `json:"extracted_links"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 // Store provides SQLite-backed mail storage.
@@ -68,11 +73,19 @@ func (s *Store) Init() error {
 }
 
 // Save inserts a mail record into the database and sets mail.ID to the new row ID.
+// It extracts verification codes and links before saving.
 func (s *Store) Save(mail *Mail) error {
+	codes, links := Extract(mail.TextBody, mail.HTMLBody)
+	mail.ExtractedCodes = codes
+	mail.ExtractedLinks = links
+
+	codesJSON, _ := json.Marshal(codes)
+	linksJSON, _ := json.Marshal(links)
+
 	result, err := s.db.Exec(
-		`INSERT INTO mails (short_id, from_addr, to_addr, subject, text_body, html_body, raw_size)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		mail.ShortID, mail.FromAddr, mail.ToAddr, mail.Subject, mail.TextBody, mail.HTMLBody, mail.RawSize,
+		`INSERT INTO mails (short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, extracted_codes, extracted_links)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		mail.ShortID, mail.FromAddr, mail.ToAddr, mail.Subject, mail.TextBody, mail.HTMLBody, mail.RawSize, string(codesJSON), string(linksJSON),
 	)
 	if err != nil {
 		return err
@@ -88,7 +101,7 @@ func (s *Store) Save(mail *Mail) error {
 // ListByShortID returns up to limit mails for the given short ID, ordered by created_at DESC.
 func (s *Store) ListByShortID(shortID string, limit int) ([]Mail, error) {
 	rows, err := s.db.Query(
-		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, created_at
+		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, extracted_codes, extracted_links, created_at
 		 FROM mails
 		 WHERE short_id = ?
 		 ORDER BY created_at DESC
@@ -104,10 +117,19 @@ func (s *Store) ListByShortID(shortID string, limit int) ([]Mail, error) {
 	for rows.Next() {
 		var m Mail
 		var isRead int
-		if err := rows.Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &m.CreatedAt); err != nil {
+		var codesJSON, linksJSON string
+		if err := rows.Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &codesJSON, &linksJSON, &m.CreatedAt); err != nil {
 			return nil, err
 		}
 		m.IsRead = isRead != 0
+		json.Unmarshal([]byte(codesJSON), &m.ExtractedCodes)
+		json.Unmarshal([]byte(linksJSON), &m.ExtractedLinks)
+		if m.ExtractedCodes == nil {
+			m.ExtractedCodes = []string{}
+		}
+		if m.ExtractedLinks == nil {
+			m.ExtractedLinks = []string{}
+		}
 		mails = append(mails, m)
 	}
 	return mails, rows.Err()
@@ -180,14 +202,23 @@ func (s *Store) DeleteByID(id int64) error {
 func (s *Store) GetByID(id int64) (*Mail, error) {
 	var m Mail
 	var isRead int
+	var codesJSON, linksJSON string
 	err := s.db.QueryRow(
-		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, created_at
+		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, extracted_codes, extracted_links, created_at
 		 FROM mails WHERE id = ?`, id,
-	).Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &m.CreatedAt)
+	).Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &codesJSON, &linksJSON, &m.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
 	m.IsRead = isRead != 0
+	json.Unmarshal([]byte(codesJSON), &m.ExtractedCodes)
+	json.Unmarshal([]byte(linksJSON), &m.ExtractedLinks)
+	if m.ExtractedCodes == nil {
+		m.ExtractedCodes = []string{}
+	}
+	if m.ExtractedLinks == nil {
+		m.ExtractedLinks = []string{}
+	}
 	return &m, nil
 }
 

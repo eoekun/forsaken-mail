@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Inbox } from 'lucide-react'
+import { Inbox, KeyRound } from 'lucide-react'
 
 export default function MailList({ mails, selectedMail, onSelect }) {
   const { t } = useTranslation()
@@ -33,6 +33,7 @@ export default function MailList({ mails, selectedMail, onSelect }) {
       <div className="divide-y divide-base-300/40">
         {mails.map((mail, idx) => {
           const isUnread = !mail.is_read
+          const hasCode = (mail.extracted_codes?.length || 0) > 0
           return (
             <div
               key={mail.id || idx}
@@ -44,9 +45,10 @@ export default function MailList({ mails, selectedMail, onSelect }) {
               onClick={() => onSelect(mail)}
             >
               <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                <span className={`text-sm truncate ${selectedMail === mail ? 'font-medium text-base-content' : isUnread ? 'font-semibold text-base-content' : 'text-base-content/50'}`}>
-                  {isUnread && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary mr-1.5 align-middle" />}
-                  {mail.from}
+                <span className={`text-sm truncate flex items-center gap-1.5 ${selectedMail === mail ? 'font-medium text-base-content' : isUnread ? 'font-semibold text-base-content' : 'text-base-content/50'}`}>
+                  {isUnread && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+                  {hasCode && <KeyRound size={12} className="text-primary shrink-0" />}
+                  <span className="truncate">{mail.from}</span>
                 </span>
                 <span className="text-[11px] text-base-content/30 shrink-0 tabular-nums">
                   {new Date(mail.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

@@ -1,5 +1,6 @@
 import Navbar from '../components/Navbar'
 import MailboxAddress from '../components/MailboxAddress'
+import MailboxTabs from '../components/MailboxTabs'
 import MailHistory from '../components/MailHistory'
 import MailList from '../components/MailList'
 import MailDetail from '../components/MailDetail'
@@ -10,7 +11,8 @@ import { useAuth } from '../App'
 export default function MainPage() {
   const { config } = useAuth()
   const {
-    shortId, setShortId, requestNewShortId,
+    shortId, requestNewShortId,
+    tabs, activeShortId, setActiveShortId, subscribeToShortId, unsubscribeFromShortId,
     mails, selectedMail, setSelectedMail, clearMails, markMailAsRead,
   } = useWebSocket(config?.host)
 
@@ -22,13 +24,23 @@ export default function MainPage() {
           shortId={shortId}
           host={config?.host}
           onRefresh={requestNewShortId}
-          onSetShortId={setShortId}
+          onSetShortId={subscribeToShortId}
         />
         <MailHistory
           host={config?.host}
-          activeShortId={shortId}
-          onSelect={setShortId}
+          activeShortId={activeShortId}
+          onSelect={subscribeToShortId}
         />
+        <div className="mt-3">
+          <MailboxTabs
+            tabs={tabs}
+            activeShortId={activeShortId}
+            host={config?.host}
+            onSelect={setActiveShortId}
+            onClose={unsubscribeFromShortId}
+            onAdd={requestNewShortId}
+          />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mt-4">
           <div className="lg:col-span-2">
             <MailList
