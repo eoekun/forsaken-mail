@@ -19,3 +19,6 @@ docker-compose.yml
 # Build artifacts
 embed/
 *.db
+*.db-wal
+*.db-shm
+.env

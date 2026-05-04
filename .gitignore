@@ -94,6 +94,9 @@ embed/*
 
 # Runtime data
 data/
+*.db
+*.db-wal
+*.db-shm
 
 # macOS
 .DS_Store
