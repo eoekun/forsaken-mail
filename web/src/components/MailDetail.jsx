@@ -1,9 +1,18 @@
+import { useEffect } from 'react'
 import DOMPurify from 'dompurify'
 import { useTranslation } from 'react-i18next'
 import { Mail, FileText } from 'lucide-react'
+import { apiPut } from '../lib/api'
 
-export default function MailDetail({ mail }) {
+export default function MailDetail({ mail, onMailRead }) {
   const { t } = useTranslation()
+
+  useEffect(() => {
+    if (mail?.id && !mail.is_read) {
+      apiPut(`/api/mails/${mail.id}/read`).catch(() => {})
+      onMailRead?.(mail.id)
+    }
+  }, [mail?.id])
 
   if (!mail) {
     return (

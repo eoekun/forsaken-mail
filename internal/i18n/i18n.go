@@ -46,6 +46,8 @@ var translations = map[string]map[string]string{
 		"webhook_token_empty":         "Webhook token/url is empty or invalid.",
 		"webhook_parse_failed":        "Failed to parse DingTalk response.",
 		"webhook_request_failed":      "Webhook request failed: %v",
+		"mail_not_found":              "mail not found",
+		"invalid_mail_id":             "invalid mail ID",
 	},
 	"zh": {
 		"method_not_allowed":          "不允许的请求方法",
@@ -85,6 +87,8 @@ var translations = map[string]map[string]string{
 		"webhook_token_empty":         "Webhook Token/URL 为空或无效。",
 		"webhook_parse_failed":        "解析钉钉响应失败。",
 		"webhook_request_failed":      "Webhook 请求失败：%v",
+		"mail_not_found":              "邮件未找到",
+		"invalid_mail_id":             "无效的邮件 ID",
 	},
 }
 

@@ -96,6 +96,11 @@ export default function useWebSocket(host) {
     setSelectedMail(null)
   }, [])
 
+  const markMailAsRead = useCallback((id) => {
+    setMails(prev => prev.map(m => m.id === id ? { ...m, is_read: true } : m))
+    setSelectedMail(prev => prev?.id === id ? { ...prev, is_read: true } : prev)
+  }, [])
+
   return {
     shortId,
     setShortId: sendShortId,
@@ -104,6 +109,7 @@ export default function useWebSocket(host) {
     selectedMail,
     setSelectedMail,
     clearMails,
+    markMailAsRead,
   }
 }
 

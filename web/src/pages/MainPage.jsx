@@ -11,7 +11,7 @@ export default function MainPage() {
   const { config } = useAuth()
   const {
     shortId, setShortId, requestNewShortId,
-    mails, selectedMail, setSelectedMail, clearMails,
+    mails, selectedMail, setSelectedMail, clearMails, markMailAsRead,
   } = useWebSocket(config?.host)
 
   return (
@@ -38,7 +38,7 @@ export default function MainPage() {
             />
           </div>
           <div className="lg:col-span-3">
-            <MailDetail mail={selectedMail} />
+            <MailDetail mail={selectedMail} onMailRead={markMailAsRead} />
           </div>
         </div>
       </div>

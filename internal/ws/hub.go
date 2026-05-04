@@ -54,6 +54,7 @@ type MailData struct {
 	To        string `json:"to"`
 	Subject   string `json:"subject"`
 	HTML      string `json:"html"`
+	IsRead    bool   `json:"is_read"`
 	CreatedAt string `json:"created_at"`
 }
 

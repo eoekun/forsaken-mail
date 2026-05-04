@@ -84,6 +84,7 @@ func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBod
 			To:        addr,
 			Subject:   subject,
 			HTML:      htmlBody,
+			IsRead:    false,
 			CreatedAt: m.CreatedAt.Format(time.RFC3339),
 		})
 

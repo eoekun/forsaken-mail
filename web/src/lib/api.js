@@ -42,3 +42,9 @@ export async function apiPut(url, data) {
     body: JSON.stringify(data),
   })
 }
+
+export async function apiDelete(url) {
+  return apiFetch(url, {
+    method: 'DELETE',
+  })
+}

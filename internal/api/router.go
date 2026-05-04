@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"forsaken-mail/internal/audit"
@@ -65,6 +66,8 @@ func (rt *Router) Handler() http.Handler {
 	// Protected routes (auth middleware applied).
 	mux.Handle("/api/config", rt.authMW.Wrap(http.HandlerFunc(rt.handleConfig)))
 	mux.Handle("/api/mails", rt.authMW.Wrap(http.HandlerFunc(rt.handleMails)))
+	mux.Handle("/api/mails/", rt.authMW.Wrap(http.HandlerFunc(rt.routeMailsSubpath)))
+	mux.Handle("/api/emails/", rt.authMW.Wrap(http.HandlerFunc(rt.handleEmails)))
 	mux.Handle("/api/domain-test", rt.authMW.Wrap(http.HandlerFunc(rt.handleDomainTest)))
 	mux.Handle("/api/webhook/test", rt.authMW.Wrap(http.HandlerFunc(rt.handleWebhookTest)))
 	mux.Handle("/api/test-email", rt.authMW.Wrap(http.HandlerFunc(rt.handleTestEmail)))
@@ -113,6 +116,15 @@ func (rt *Router) routeAuth(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	http.NotFound(w, r)
+}
+
+// routeMailsSubpath dispatches /api/mails/{id}/read.
+func (rt *Router) routeMailsSubpath(w http.ResponseWriter, r *http.Request) {
+	if strings.HasSuffix(r.URL.Path, "/read") {
+		rt.handleMailRead(w, r)
+		return
+	}
 	http.NotFound(w, r)
 }
 

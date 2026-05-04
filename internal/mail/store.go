@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS mails (
     text_body TEXT NOT NULL DEFAULT '',
     html_body TEXT NOT NULL DEFAULT '',
     raw_size INTEGER NOT NULL DEFAULT 0,
+    is_read INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 `
@@ -38,6 +39,7 @@ type Mail struct {
 	TextBody  string    `json:"text_body"`
 	HTMLBody  string    `json:"html_body"`
 	RawSize   int64     `json:"raw_size"`
+	IsRead    bool      `json:"is_read"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -86,7 +88,7 @@ func (s *Store) Save(mail *Mail) error {
 // ListByShortID returns up to limit mails for the given short ID, ordered by created_at DESC.
 func (s *Store) ListByShortID(shortID string, limit int) ([]Mail, error) {
 	rows, err := s.db.Query(
-		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, created_at
+		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, created_at
 		 FROM mails
 		 WHERE short_id = ?
 		 ORDER BY created_at DESC
@@ -101,9 +103,11 @@ func (s *Store) ListByShortID(shortID string, limit int) ([]Mail, error) {
 	var mails []Mail
 	for rows.Next() {
 		var m Mail
-		if err := rows.Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &m.CreatedAt); err != nil {
+		var isRead int
+		if err := rows.Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &m.CreatedAt); err != nil {
 			return nil, err
 		}
+		m.IsRead = isRead != 0
 		mails = append(mails, m)
 	}
 	return mails, rows.Err()
@@ -132,4 +136,64 @@ func (s *Store) CleanupByCount(maxCount int) error {
 		maxCount,
 	)
 	return err
+}
+
+// MarkAsRead sets is_read=1 for the given mail ID.
+func (s *Store) MarkAsRead(id int64) error {
+	result, err := s.db.Exec(`UPDATE mails SET is_read = 1 WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// DeleteByShortID deletes all mails for the given short ID.
+func (s *Store) DeleteByShortID(shortID string) error {
+	_, err := s.db.Exec(`DELETE FROM mails WHERE short_id = ?`, shortID)
+	return err
+}
+
+// DeleteByID deletes a single mail by its ID.
+func (s *Store) DeleteByID(id int64) error {
+	result, err := s.db.Exec(`DELETE FROM mails WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// GetByID returns a single mail by its ID.
+func (s *Store) GetByID(id int64) (*Mail, error) {
+	var m Mail
+	var isRead int
+	err := s.db.QueryRow(
+		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, created_at
+		 FROM mails WHERE id = ?`, id,
+	).Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &m.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	m.IsRead = isRead != 0
+	return &m, nil
+}
+
+// CountByShortID returns the total number of mails for the given short ID.
+func (s *Store) CountByShortID(shortID string) (int, error) {
+	var count int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM mails WHERE short_id = ?`, shortID).Scan(&count)
+	return count, err
 }
