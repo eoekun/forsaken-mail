@@ -28,7 +28,7 @@ services:
       - "${PORT:-3000}:${PORT:-3000}"
       - "25:25"
     volumes:
-      - .:/data
+      - ./data:/data
     deploy:
       resources:
         limits:
