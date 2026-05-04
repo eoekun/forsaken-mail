@@ -71,7 +71,7 @@ func (rt *Router) Handler() http.Handler {
 	// Public routes (no auth required).
 	mux.HandleFunc("/auth/", rt.routeAuth)
 	mux.HandleFunc("/api/health", rt.handleHealth)
-	mux.HandleFunc("/api/config", rt.handleConfig)
+	mux.Handle("/api/config", rt.authMW.OptionalAuth(http.HandlerFunc(rt.handleConfig)))
 
 	// Protected routes (auth middleware applied).
 	mux.Handle("/api/mails", rt.authMW.Wrap(http.HandlerFunc(rt.handleMails)))

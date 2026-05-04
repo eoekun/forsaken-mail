@@ -71,6 +71,20 @@ func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 	})
 }
 
+// OptionalAuth reads the session cookie and sets the email in context if present,
+// but does NOT reject unauthenticated requests. Use for public routes that
+// need to know the user identity when available (e.g. /api/config).
+func (m *Middleware) OptionalAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session, err := m.sessions.GetCookie(r)
+		if err == nil && time.Now().Before(session.ExpiresAt) {
+			ctx := context.WithValue(r.Context(), emailKey, session.Email)
+			r = r.WithContext(ctx)
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func GetEmail(r *http.Request) string {
 	email, _ := r.Context().Value(emailKey).(string)
 	return email
