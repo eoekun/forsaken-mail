@@ -105,7 +105,8 @@ Deploy steps:
 1. Commit and push to `origin/refactor/go-react`
 2. SSH to server: `ssh ubuntu@130.162.245.79`
 3. `cd /home/ubuntu/forsaken-mail && git pull origin refactor/go-react`
-4. `docker compose build && docker compose up -d`
+4. `mkdir -p data && sudo chown -R 100:101 data` (first deploy or if data/ was recreated; container `appuser` is UID 100)
+5. `docker compose build && docker compose up -d`
 
 The server runs via Docker Compose (ports 25 for SMTP, 3081 for HTTP). No Go toolchain needed on the dev machine — all builds happen in Docker.
 
