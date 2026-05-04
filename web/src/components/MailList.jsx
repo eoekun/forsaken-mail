@@ -30,7 +30,7 @@ export default function MailList({ mails, selectedMail, onSelect }) {
 
   return (
     <div className="card-modern">
-      <div className="p-4 pb-2">
+      <div className="p-3 pb-2 sm:p-4">
         <div className="flex items-center gap-2 mb-2">
           <Inbox size={16} className="text-base-content/40" />
           <span className="text-sm font-medium text-base-content/70">{t('mailList.title')}</span>
@@ -61,7 +61,7 @@ export default function MailList({ mails, selectedMail, onSelect }) {
             return (
               <div
                 key={mail.id || idx}
-                className={`px-4 py-3 cursor-pointer transition-all duration-150 ${
+                className={`px-3 py-2.5 sm:px-4 sm:py-3 cursor-pointer transition-all duration-150 ${
                   isSelected
                     ? 'bg-primary/5 border-l-3 border-l-primary'
                     : `border-l-3 border-l-transparent hover:bg-base-200 ${isUnread ? 'font-semibold' : 'font-normal opacity-70'}`

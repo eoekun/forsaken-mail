@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { apiGet } from '../lib/api'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 
 const EVENTS = ['', 'LOGIN', 'LOGIN_DENIED', 'LOGOUT', 'MAILBOX_CREATE', 'MAIL_RECEIVED', 'MAIL_DROPPED', 'WEBHOOK_SENT', 'CONFIG_CHANGED']
 
@@ -23,6 +23,8 @@ export default function AuditLogTab() {
   const [event, setEvent] = useState('')
   const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [detailLog, setDetailLog] = useState(null)
+  const dialogRef = useRef(null)
   const limit = 50
 
   const fetchLogs = async () => {
@@ -80,7 +82,12 @@ export default function AuditLogTab() {
                     </span>
                   </td>
                   <td className="text-xs">{log.email}</td>
-                  <td className="max-w-[200px] truncate text-xs text-base-content/60">{log.detail}</td>
+                  <td
+                    className="max-w-[200px] truncate text-xs text-base-content/60 cursor-pointer hover:text-primary transition-colors"
+                    onClick={() => { setDetailLog(log); dialogRef.current?.showModal() }}
+                  >
+                    {log.detail}
+                  </td>
                   <td className="text-xs font-mono text-base-content/50">{log.ip}</td>
                 </tr>
               ))}
@@ -109,6 +116,35 @@ export default function AuditLogTab() {
           <ChevronRight size={14} />
         </button>
       </div>
+
+      <dialog ref={dialogRef} className="modal modal-bottom sm:modal-middle">
+        <div className="modal-box">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-sm">{t('audit.detail')}</h3>
+            <form method="dialog">
+              <button className="btn btn-sm btn-ghost btn-circle"><X size={16} /></button>
+            </form>
+          </div>
+          {detailLog && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content/50">
+                <span>{new Date(detailLog.created_at).toLocaleString()}</span>
+                <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${EVENT_COLORS[detailLog.event] || 'bg-base-200 text-base-content/60'}`}>
+                  {detailLog.event}
+                </span>
+                <span>{detailLog.email}</span>
+                <span className="font-mono">{detailLog.ip}</span>
+              </div>
+              <pre className="whitespace-pre-wrap break-all text-sm text-base-content/80 bg-base-200/60 rounded-lg p-3 max-h-[60vh] overflow-y-auto">
+                {detailLog.detail || '—'}
+              </pre>
+            </div>
+          )}
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
     </div>
   )
 }

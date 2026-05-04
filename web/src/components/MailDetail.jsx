@@ -50,7 +50,7 @@ export default function MailDetail({ mail, onMailRead, onBack }) {
 
   return (
     <div className="card-modern">
-      <div className="p-5">
+      <div className="p-3 sm:p-5">
         {onBack && (
           <button
             className="btn btn-sm btn-ghost mb-3 lg:hidden"
@@ -62,29 +62,29 @@ export default function MailDetail({ mail, onMailRead, onBack }) {
         )}
 
         <div className="mb-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-lg font-semibold text-base-content">{mail.from}</span>
-            <span className="text-sm text-base-content/50 shrink-0 tabular-nums">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2">
+            <span className="text-base sm:text-lg font-semibold text-base-content truncate">{mail.from}</span>
+            <span className="text-xs sm:text-sm text-base-content/50 shrink-0 tabular-nums">
               {new Date(mail.created_at).toLocaleString()}
             </span>
           </div>
-          <p className="text-sm text-base-content/40">{t('mailDetail.to')} {mail.to}</p>
-          <h2 className="text-base font-medium text-base-content mt-1">
+          <p className="text-xs sm:text-sm text-base-content/40 truncate">{t('mailDetail.to')} {mail.to}</p>
+          <h2 className="text-sm sm:text-base font-medium text-base-content mt-1">
             {mail.subject || t('mailDetail.noSubject')}
           </h2>
         </div>
 
         {codes.length > 0 && (
-          <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+          <div className="mb-4 p-2.5 sm:p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
             <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-2">{t('mailDetail.verificationCodes')}</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {codes.map((code) => (
                 <button
                   key={code}
                   onClick={() => copyCode(code)}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-base-100 border border-emerald-300 dark:border-emerald-700 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-base-100 border border-emerald-300 dark:border-emerald-700 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors cursor-pointer"
                 >
-                  <span className="text-2xl font-mono font-bold text-emerald-700 dark:text-emerald-400 tracking-wider">{code}</span>
+                  <span className="text-lg sm:text-2xl font-mono font-bold text-emerald-700 dark:text-emerald-400 tracking-wider">{code}</span>
                   {copiedCode === code ? (
                     <Check size={14} className="text-success" />
                   ) : (
@@ -96,14 +96,14 @@ export default function MailDetail({ mail, onMailRead, onBack }) {
           </div>
         )}
 
-        <div className="border-t border-base-300/40 pt-4">
+        <div className="border-t border-base-300/40 pt-3 sm:pt-4">
           {mail.html ? (
             <div
-              className="prose prose-sm max-w-none prose-headings:text-base-content prose-p:text-base-content/80 prose-a:text-primary"
+              className="prose prose-sm max-w-none prose-headings:text-base-content prose-p:text-base-content/80 prose-a:text-primary break-words"
               dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
             />
           ) : (
-            <pre className="whitespace-pre-wrap text-sm text-base-content/80 font-sans leading-relaxed">
+            <pre className="whitespace-pre-wrap break-all text-xs sm:text-sm text-base-content/80 font-sans leading-relaxed">
               {mail.text_body}
             </pre>
           )}

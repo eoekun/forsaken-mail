@@ -19,7 +19,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-base-200">
       <Navbar />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <h1 className="text-xl font-bold text-base-content mb-4">{t('admin.pageTitle')}</h1>
         <div className="flex items-center gap-1 border-b border-base-300/60 mb-6">
           {TABS.map(({ key, icon: Icon }) => (
