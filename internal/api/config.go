@@ -22,6 +22,7 @@ func (rt *Router) handleConfig(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]any{
 		"host":       host,
 		"site_title": siteTitle,
+		"auth_mode":  rt.cfg.AuthMode,
 	}
 
 	// Include user email if authenticated.

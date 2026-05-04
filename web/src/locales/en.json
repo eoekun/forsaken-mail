@@ -13,6 +13,12 @@
     "github": "Sign in with GitHub",
     "google": "Sign in with Google"
   },
+  "loginForm": {
+    "username": "Username",
+    "password": "Password",
+    "login": "Sign In",
+    "loginFailed": "Invalid username or password"
+  },
   "main": {},
   "admin": {
     "auditLogs": "Audit Logs",

@@ -41,7 +41,7 @@ export default function App() {
   useEffect(() => {
     apiGet('/api/config')
       .then(data => {
-        setConfig({ host: data.host, siteTitle: data.site_title })
+        setConfig({ host: data.host, siteTitle: data.site_title, authMode: data.auth_mode })
         if (data.email) {
           setUser({ email: data.email })
         }

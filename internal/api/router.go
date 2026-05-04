@@ -26,6 +26,7 @@ type Router struct {
 	hub        *ws.Hub
 	webhook    *webhook.Sender
 	provider   auth.Provider
+	localAuth  *auth.LocalAuth // non-nil only when AUTH_MODE=local
 	startTime  time.Time
 }
 
@@ -39,8 +40,12 @@ func NewRouter(
 	auditStore *audit.Store,
 	hub *ws.Hub,
 	webhookSender *webhook.Sender,
+	localAuth *auth.LocalAuth,
 ) *Router {
-	provider, _ := auth.NewProvider(cfg)
+	var provider auth.Provider
+	if cfg.AuthMode == "oauth" {
+		provider, _ = auth.NewProvider(cfg)
+	}
 	return &Router{
 		cfg:        cfg,
 		sessions:   sessions,
@@ -51,6 +56,7 @@ func NewRouter(
 		hub:        hub,
 		webhook:    webhookSender,
 		provider:   provider,
+		localAuth:  localAuth,
 		startTime:  time.Now().UTC(),
 	}
 }
@@ -90,8 +96,14 @@ func (rt *Router) routeAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// /auth/{provider}/login or /auth/{provider}/callback
-	if len(path) > len("/auth/") {
+	// AUTH_MODE=local: /auth/login
+	if rt.cfg.AuthMode == "local" && path == "/auth/login" {
+		rt.handleLocalLogin(w, r)
+		return
+	}
+
+	// AUTH_MODE=oauth: /auth/{provider}/login or /auth/{provider}/callback
+	if rt.cfg.AuthMode == "oauth" && len(path) > len("/auth/") {
 		remainder := path[len("/auth/"):]
 		if len(remainder) > 0 {
 			// Find the action part after the provider.

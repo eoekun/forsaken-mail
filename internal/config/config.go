@@ -13,6 +13,9 @@ type Config struct {
 	MailHost          string
 	SiteTitle         string
 	DBPath            string
+	AuthMode          string // "oauth" or "local"
+	AdminUsername     string
+	AdminPassword     string
 	OAuthProvider     string
 	OAuthClientID     string
 	OAuthClientSecret string
@@ -30,6 +33,7 @@ func Load() (*Config, error) {
 		MailinPort:    25,
 		SiteTitle:     "Forsaken Mail",
 		DBPath:        "./data/forsaken-mail.db",
+		AuthMode:      "oauth",
 		OAuthProvider: "github",
 		LogLevel:      "info",
 		LogMaxSizeMB:  10,
@@ -65,6 +69,13 @@ func Load() (*Config, error) {
 	if v := os.Getenv("DB_PATH"); v != "" {
 		cfg.DBPath = v
 	}
+
+	if v := os.Getenv("AUTH_MODE"); v != "" {
+		cfg.AuthMode = v
+	}
+
+	cfg.AdminUsername = os.Getenv("ADMIN_USERNAME")
+	cfg.AdminPassword = os.Getenv("ADMIN_PASSWORD")
 
 	if v := os.Getenv("OAUTH_PROVIDER"); v != "" {
 		cfg.OAuthProvider = v
@@ -113,14 +124,28 @@ func (c *Config) validate() error {
 	if c.MailHost == "" {
 		return fmt.Errorf("MAIL_HOST is required")
 	}
-	if c.OAuthClientID == "" {
-		return fmt.Errorf("OAUTH_CLIENT_ID is required")
-	}
-	if c.OAuthClientSecret == "" {
-		return fmt.Errorf("OAUTH_CLIENT_SECRET is required")
-	}
 	if c.SessionSecret == "" {
 		return fmt.Errorf("SESSION_SECRET is required")
 	}
+
+	switch c.AuthMode {
+	case "oauth":
+		if c.OAuthClientID == "" {
+			return fmt.Errorf("OAUTH_CLIENT_ID is required when AUTH_MODE=oauth")
+		}
+		if c.OAuthClientSecret == "" {
+			return fmt.Errorf("OAUTH_CLIENT_SECRET is required when AUTH_MODE=oauth")
+		}
+	case "local":
+		if c.AdminUsername == "" {
+			return fmt.Errorf("ADMIN_USERNAME is required when AUTH_MODE=local")
+		}
+		if len(c.AdminPassword) < 8 {
+			return fmt.Errorf("ADMIN_PASSWORD must be at least 8 characters when AUTH_MODE=local")
+		}
+	default:
+		return fmt.Errorf("AUTH_MODE must be 'oauth' or 'local', got '%s'", c.AuthMode)
+	}
+
 	return nil
 }

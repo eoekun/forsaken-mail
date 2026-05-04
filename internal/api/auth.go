@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -173,6 +174,44 @@ func (rt *Router) handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+}
+
+// handleLocalLogin handles POST /auth/login for local authentication mode.
+func (rt *Router) handleLocalLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
+		return
+	}
+
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "invalid_request"))
+		return
+	}
+
+	ip := r.RemoteAddr
+
+	if rt.localAuth == nil || !rt.localAuth.Verify(req.Username, req.Password) {
+		if auditErr := rt.auditStore.Record(auth.EventLoginFailed, req.Username, "{}", ip); auditErr != nil {
+			slog.Error("failed to record login failed audit", "error", auditErr)
+		}
+		writeError(w, http.StatusUnauthorized, i18n.T(i18n.LangFromRequest(r), "login_failed"))
+		return
+	}
+
+	rt.sessions.SetCookie(w, &auth.SessionData{
+		Email:     req.Username,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
+
+	if auditErr := rt.auditStore.Record(auth.EventLogin, req.Username, "{}", ip); auditErr != nil {
+		slog.Error("failed to record login audit", "error", auditErr)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "email": req.Username})
 }
 
 // extractProvider extracts the provider name from a path like /auth/{provider}/login.

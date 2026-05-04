@@ -105,8 +105,14 @@ func main() {
 	sessions := auth.NewSessionManager(cfg.SessionSecret)
 	authMW := auth.NewMiddleware(sessions, settingsStore)
 
+	// Local auth (only when AUTH_MODE=local)
+	var localAuth *auth.LocalAuth
+	if cfg.AuthMode == "local" {
+		localAuth = auth.NewLocalAuth(cfg.AdminUsername, cfg.AdminPassword)
+	}
+
 	// API router
-	apiRouter := api.NewRouter(cfg, sessions, authMW, mailStore, settingsStore, auditStore, hub, webhookSender)
+	apiRouter := api.NewRouter(cfg, sessions, authMW, mailStore, settingsStore, auditStore, hub, webhookSender, localAuth)
 
 	// Combine API routes with static file serving for the SPA.
 	httpServer := &http.Server{

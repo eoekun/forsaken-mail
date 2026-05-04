@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	EventLogin  = "LOGIN"
-	EventLogout = "LOGOUT"
+	EventLogin       = "LOGIN"
+	EventLogout      = "LOGOUT"
+	EventLoginFailed = "LOGIN_FAILED"
 )
 
 type Provider interface {

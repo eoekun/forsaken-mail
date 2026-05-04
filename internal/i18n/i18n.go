@@ -48,6 +48,8 @@ var translations = map[string]map[string]string{
 		"webhook_request_failed":      "Webhook request failed: %v",
 		"mail_not_found":              "mail not found",
 		"invalid_mail_id":             "invalid mail ID",
+		"login_failed":                "invalid username or password",
+		"invalid_request":             "invalid request",
 	},
 	"zh": {
 		"method_not_allowed":          "不允许的请求方法",
@@ -89,6 +91,8 @@ var translations = map[string]map[string]string{
 		"webhook_request_failed":      "Webhook 请求失败：%v",
 		"mail_not_found":              "邮件未找到",
 		"invalid_mail_id":             "无效的邮件 ID",
+		"login_failed":                "用户名或密码错误",
+		"invalid_request":             "无效的请求",
 	},
 }
 
