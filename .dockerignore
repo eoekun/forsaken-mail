@@ -1,24 +1,34 @@
 .git
 .gitignore
+.gitattributes
+.claude/
+.hermes/
 .idea
 .DS_Store
+._*
 
-node_modules
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Docs & Docker config
+# Docs & project config (not needed for build)
 README.md
 README.zh-CN.md
+CLAUDE.md
 LICENSE
 docker/
 docker-compose.yml
 .dockerignore
+.env
+.env.example
 
-# Build artifacts
-embed/
+# Runtime data (mounted as volume)
+data/
 *.db
 *.db-wal
 *.db-shm
-.env
+*.db-journal
+
+# Frontend deps (Docker builds fresh)
+web/node_modules
+
+# Logs
+logs/
+*.log
+npm-debug.log*
