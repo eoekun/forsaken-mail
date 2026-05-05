@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Forsaken-Mail is a self-hosted disposable/temporary email service. Users receive emails at random or custom addresses on a configured domain and view them in real-time via a web UI. Optional DingTalk webhook notifications are supported.
 
-The active codebase is **Go backend + React frontend**. Legacy Node.js code (app.js, bin/www, modules/, routes/, public/) still exists in the repo but is superseded by the Go rewrite.
+The codebase is **Go backend + React frontend**.
 
 ## Build & Run Commands
 
@@ -33,6 +33,8 @@ docker compose up              # run with .env config
 
 ## Architecture
 
+Go module: `forsaken-mail`. Key dependencies: `coder/websocket`, `emersion/go-smtp`, `jhillyerd/enmime`, `mattn/go-sqlite3`, `golang.org/x/oauth2`.
+
 ### Data Flow
 
 ```
@@ -58,21 +60,22 @@ Browser <--(HTTP /api/*)--> internal/api (http.NewServeMux)
 - **`smtp/`** — go-smtp Backend/Session implementation + per-IP rate limiter
 - **`mail/`** — SQLite mail CRUD, router (SMTP->store->WS->webhook), periodic cleanup goroutine
 - **`ws/`** — WebSocket hub: manages shortId->client mappings, broadcasts mail
-- **`auth/`** — OAuth2 (GitHub/Google), AES-GCM session cookies, email whitelist middleware
-- **`api/`** — HTTP handlers on stdlib `http.NewServeMux`; `router.go` defines all routes
+- **`auth/`** — two modes: OAuth2 (GitHub/Google) or local (username/password via `AUTH_MODE`); AES-GCM session cookies; email whitelist middleware
+- **`api/`** — HTTP handlers on stdlib `http.NewServeMux`; `router.go` defines all routes and applies security headers (CSP, X-Frame-Options)
 - **`audit/`** — SQLite audit log CRUD
 - **`webhook/`** — DingTalk webhook sender
 - **`logger/`** — slog with lumberjack log rotation
+- **`i18n/`** — server-side translations (en/zh) for API error messages; resolved from `Accept-Language` header
 
 ### Frontend (`web/src/`)
 
-Stack: React 19 + React Router 7 + Tailwind 4 + DaisyUI 5 + Vite 6.
+Stack: React 19 + React Router 7 + Tailwind 4 + DaisyUI 5 + Vite 6. i18n via i18next (en/zh locales in `locales/`).
 
 - **`App.jsx`** — Router + AuthContext provider; routes: `/login`, `/`, `/admin`
 - **`hooks/useWebSocket.js`** — WebSocket lifecycle, mail state, exponential backoff reconnect (1s–30s), localStorage shortId history
 - **`lib/api.js`** — fetch wrapper with `credentials: 'same-origin'`, auto-redirect on 401
-- **`pages/`** — LoginPage (OAuth buttons), MainPage (mailbox UI), AdminPage (audit/settings/status tabs)
-- **`components/`** — MailboxAddress, MailList, MailDetail (DOMPurify-sanitized HTML), MailHistory, HelpModal, Navbar
+- **`pages/`** — LoginPage (OAuth or local auth form), MainPage (mailbox UI), AdminPage (audit/settings/status tabs)
+- **`components/`** — MailboxAddress, MailboxTabs, MailList, MailDetail (DOMPurify-sanitized HTML), RecentMails, MailHistory, SettingsTab, StatusTab, AuditLogTab, HelpModal, Navbar, Toast
 
 ### SPA Serving
 
@@ -86,7 +89,7 @@ Stack: React 19 + React Router 7 + Tailwind 4 + DaisyUI 5 + Vite 6.
 ### Configuration
 
 All config is environment-variable based. See `.env.example`. Two tiers:
-- **A-class** (env vars, immutable at runtime): PORT, OAUTH_*, SESSION_SECRET, DB_PATH, MAILIN_*
+- **A-class** (env vars, immutable at runtime): PORT, AUTH_MODE (`oauth`|`local`), OAUTH_*, ADMIN_USERNAME/PASSWORD (for local mode), SESSION_SECRET, COOKIE_SECURE, DB_PATH, MAILIN_*
 - **B-class** (SQLite `settings` table, mutable via `PUT /api/admin/settings`): mail_host, site_title, allowed_emails, keyword_blacklist, retention settings
 
 ## Dev Workflow

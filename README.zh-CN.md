@@ -1,93 +1,109 @@
 Forsaken-Mail
 ==============
-一个可自托管的临时邮箱服务。
 
-[在线演示](http://disposable.dhc-app.com)
+一个可自托管的临时邮箱服务，基于 Go + React 构建。
+
 [English README](./README.md)
 
-### 安装
+## 功能特性
 
-#### 正确配置 DNS
+- 在自有域名上接收随机或自定义地址的邮件
+- 通过 WebSocket 实时推送新邮件
+- 支持 OAuth2（GitHub/Google）或本地用户名/密码认证
+- 邮箱地址白名单访问控制
+- 钉钉 Webhook 新邮件通知
+- 管理后台：审计日志、运行时配置、系统状态
+- 国际化支持（中文 / 英文）
+- SQLite 存储，自动清理过期邮件
 
-为了能接收邮件，你需要先让 SMTP 服务可被外部投递。假设你要接收 `*@subdomain.domain.com` 的邮件，需要添加两条 DNS 记录：
+## 快速开始
 
-* MX 记录：`subdomain.domain.com MX 10 mxsubdomain.domain.com`  
-  表示 `*@subdomain.domain.com` 的邮件服务器是 `mxsubdomain.domain.com`。
-* A 记录：`mxsubdomain.domain.com A 你的邮件服务器IP`  
-  表示该邮件服务器对应的 IP 地址。
+### DNS 配置
 
-你可以使用 [smtp tester](http://mxtoolbox.com/diagnostic.aspx) 验证配置是否正确。
+假设你要接收 `*@subdomain.domain.com` 的邮件，需添加两条 DNS 记录：
 
-#### 开始运行
-通用方式：
+- **MX 记录**：`subdomain.domain.com  MX  10  mxsubdomain.domain.com`
+- **A 记录**：`mxsubdomain.domain.com  A  <你的服务器IP>`
+
+可使用 [SMTP 测试工具](http://mxtoolbox.com/diagnostic.aspx) 验证配置。
+
+### Docker Compose（推荐）
+
 ```bash
-# 当前版本已支持 Node.js 24
-npm install && npm start
-```
-
-如果你想用 Docker 运行：
-```bash
-docker build -t denghongcai/forsaken-mail .
-docker run --name forsaken-mail -d -p 25:25 -p 3000:3000 denghongcai/forsaken-mail
-```
-
-#### 使用 docker compose + basic auth 运行
-
-本仓库已集成 `nginx` 反向代理和 HTTP Basic Authentication。
-
-1. 用环境变量设置鉴权账号密码：
-```bash
-export MAIL_HOST=mail.example.com
-export SITE_TITLE=Forsaken Mail
-export MAILIN_HOST=0.0.0.0
-export MAILIN_PORT=25
-export KEYWORD_BLACKLIST=admin,postmaster,system,webmaster,administrator,hostmaster,service,server,root
-export DINGTALK_WEBHOOK_TOKEN=your-dingtalk-access-token
-export DINGTALK_WEBHOOK_MESSAGE=Forsaken-Mail: new email received.
-export BASIC_AUTH_USERNAME=admin
-export BASIC_AUTH_PASSWORD=your-strong-password
-export NGINX_PORT=80
-```
-
-也可以使用本地环境文件：
-```bash
-cp .env.example .env
-# 然后编辑 .env
-```
-
-现在配置统一走环境变量，`config-default.json` 已不再使用。
-
-2. 使用 docker compose 启动：
-```bash
+cp .env.example .env   # 编辑配置
 docker compose up -d --build
 ```
 
-3. 浏览器访问：
-```text
-http://localhost
+服务暴露端口：
+- **25** — SMTP（接收邮件）
+- **3000** — Web UI（可通过 `PORT` 环境变量修改）
+
+浏览器访问 `http://localhost:3000`。
+
+### 环境变量
+
+完整列表见 `.env.example`。必填项：
+
+| 变量 | 说明 |
+|---|---|
+| `MAIL_HOST` | 页面展示的邮箱域名（如 `mail.example.com`） |
+| `SESSION_SECRET` | 会话加密密钥（`openssl rand -hex 32`） |
+| `AUTH_MODE` | `oauth`（默认）或 `local` |
+| `OAUTH_CLIENT_ID` / `OAUTH_CLIENT_SECRET` | `AUTH_MODE=oauth` 时必填 |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `AUTH_MODE=local` 时必填（密码至少 8 位） |
+
+可选：`DINGTALK_WEBHOOK_TOKEN`、`KEYWORD_BLACKLIST`、`SITE_TITLE`、`LOG_LEVEL`、`COOKIE_SECURE`。
+
+### 数据持久化
+
+SQLite 数据库存储在 `./data/` 目录（Docker volume 挂载）。首次部署：
+
+```bash
+mkdir -p data && sudo chown -R 100:101 data
 ```
 
-访问网页前会弹出用户名/密码验证。
+容器以 `appuser`（UID 100）运行。
 
-说明：
-* SMTP 端口 `25` 由 `app` 服务暴露。
-* Web 端口 `80` 由 `nginx` 服务暴露。
-* 若未设置环境变量，compose 默认使用 `admin / change-me`（仅用于本地快速测试）。
-* `MAIL_HOST` 用于页面展示的邮箱域名（例如 `abc@mail.example.com`），即使你临时通过服务器 IP 访问页面也会按该域名展示。
-* `SITE_TITLE` 用于配置浏览器页面标题和左上角主标题。
-* `DINGTALK_WEBHOOK_TOKEN` 支持两种形式：仅 `access_token`，或完整 webhook URL；为空则不发送请求。
-* `DINGTALK_WEBHOOK_MESSAGE` 用于配置自动通知的首行标题（钉钉机器人开启关键词校验时很有用）。
-* 首页新增了“帮助说明”弹窗，支持 DNS 测试与 webhook 模拟消息发送（可临时输入 token 验证）。
+## 开发环境
 
-浏览器也可以访问：
-```text
-http://localhost:3000
+前端需要 Node.js 24+。Go 后端通过 Docker 构建（本地无需安装 Go）。
+
+```bash
+# 终端 1：Go 后端（API 监听 :3000）
+go run ./cmd/server
+
+# 终端 2：Vite 开发服务器（前端 :5173，代理 API/WS/auth 到 :3000）
+cd web && npm install && npm run dev
 ```
 
-`3000` 端口仅对应上面的直接 `docker run` 方式。  
-如果是 `docker compose + nginx auth`，请使用：
-```text
-http://localhost
+构建生产版本前端（输出到 `embed/`）：
+
+```bash
+cd web && npm run build
 ```
 
-Enjoy!
+## 架构
+
+```
+外部邮件 ──(SMTP :25)──► go-smtp 服务器
+  → enmime 解析 → mail.Router
+    → SQLite 存储
+    → WebSocket 推送到已订阅的客户端
+    → 钉钉 Webhook（异步）
+
+浏览器 ◄──(WebSocket /ws)──► ws.Hub
+  → 客户端订阅 shortId
+  → 服务端广播新邮件
+
+浏览器 ◄──(HTTP /api/*)──► http.NewServeMux
+  → REST API + React SPA（Go embed）
+  → OAuth/本地认证中间件
+```
+
+**后端**（`internal/`）：config、smtp、mail（store/router/cleanup）、ws、auth（OAuth2 + 本地认证）、api、settings、audit、webhook、i18n、logger。
+
+**前端**（`web/src/`）：React 19 + React Router 7 + Tailwind 4 + DaisyUI 5 + Vite 6。i18next 国际化。
+
+## 许可证
+
+GPL-2.0
