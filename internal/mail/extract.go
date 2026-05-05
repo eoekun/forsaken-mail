@@ -6,11 +6,32 @@ import (
 )
 
 var codePatterns = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)(?:verification|verify|confirm|security|auth)\s*(?:code|pin|number)[\s:]*(\d{4,8})`),
-	regexp.MustCompile(`(?i)(?:验证码|确认码|安全码|动态码)[\s:：]*(\d{4,8})`),
-	regexp.MustCompile(`(?i)(?:your|the)\s+(?:code|pin)\s+(?:is|:)\s*(\d{4,8})`),
-	regexp.MustCompile(`(?i)code[\s:]+(\d{4,8})`),
-	regexp.MustCompile(`(?i)pin[\s:]+(\d{4,8})`),
+	// English: "verification code", "security code", "auth code", etc.
+	regexp.MustCompile(`(?i)(?:verification|verify|confirm|security|auth(?:entication)?)\s*(?:code|pin|number|token)[\s:]*(\d{4,8})`),
+	// English: "your code is 123456", "the code: 123456"
+	regexp.MustCompile(`(?i)(?:your|the)\s+(?:code|pin|otp|token)\s+(?:is|:)\s*(\d{4,8})`),
+	// English: "OTP: 123456", "OTP is 123456"
+	regexp.MustCompile(`(?i)\botp[\s:]+(\d{4,8})`),
+	// English: "enter 123456", "use code 123456", "input code 123456"
+	regexp.MustCompile(`(?i)(?:enter|use|input|submit)\s+(?:(?:the\s+)?code\s+)?(\d{4,8})`),
+	// English: "code: 123456", "code：123456"
+	regexp.MustCompile(`(?i)code[\s:：]+(\d{4,8})`),
+	// English: "pin: 123456"
+	regexp.MustCompile(`(?i)\bpin[\s:：]+(\d{4,8})`),
+	// English: "token: 123456"
+	regexp.MustCompile(`(?i)\btoken[\s:：]+(\d{4,8})`),
+	// Chinese: 验证码、确认码、安全码、动态码、校验码
+	regexp.MustCompile(`(?:验证码|确认码|安全码|动态码|校验码|短信码)[\s:：]*(\d{4,8})`),
+	// Chinese: "验证码为123456", "验证码是123456"
+	regexp.MustCompile(`(?:验证码|确认码)[为是][\s:]*(\d{4,8})`),
+	// Chinese: "输入123456", "填写123456"
+	regexp.MustCompile(`(?:输入|填写|使用)[的]?(?:验证码|校验码)?[\s:：]*(\d{4,8})`),
+	// HTML: code inside <b>, <strong>, <span> with common class patterns
+	regexp.MustCompile(`<(?:b|strong|span[^>]*class="[^"]*(?:code|otp|verify)[^"]*")[^>]*>\s*(\d{4,8})\s*</(?:b|strong|span)>`),
+	// Standalone: 4-8 digits on their own line (common in code-only emails)
+	regexp.MustCompile(`(?m)^\s*(\d{4,8})\s*$`),
+	// Digits with spaces: "123 456" → captures "123456"
+	regexp.MustCompile(`(?i)(?:code|otp|pin|验证码)[\s:：]*(\d{2,4}\s+\d{2,6})`),
 }
 
 var linkPattern = regexp.MustCompile(`https?://[^\s<>"')\]]+`)
@@ -24,8 +45,8 @@ func Extract(textBody, htmlBody string) (codes []string, links []string) {
 	for _, re := range codePatterns {
 		for _, m := range re.FindAllStringSubmatch(combined, -1) {
 			if len(m) > 1 {
-				code := strings.TrimSpace(m[1])
-				if code != "" {
+				code := strings.Join(strings.Fields(m[1]), "") // strip inner spaces
+				if code != "" && len(code) >= 4 {
 					codeSet[code] = struct{}{}
 				}
 			}

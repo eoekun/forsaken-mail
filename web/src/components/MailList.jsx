@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Inbox, KeyRound, Search } from 'lucide-react'
+import { Inbox, KeyRound, Search, Copy, Check } from 'lucide-react'
 
 function formatMailTime(dateStr, t) {
   const now = Date.now()
@@ -18,6 +18,23 @@ function formatMailTime(dateStr, t) {
 export default function MailList({ mails, selectedMail, onSelect }) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
+  const [copiedId, setCopiedId] = useState(null)
+  const copiedTimerRef = useRef(null)
+
+  useEffect(() => {
+    return () => clearTimeout(copiedTimerRef.current)
+  }, [])
+
+  const handleCopyCode = (e, mail) => {
+    e.stopPropagation()
+    const code = mail.extracted_codes?.[0]
+    if (!code) return
+    navigator.clipboard.writeText(code).then(() => {
+      setCopiedId(mail.id)
+      clearTimeout(copiedTimerRef.current)
+      copiedTimerRef.current = setTimeout(() => setCopiedId(null), 2000)
+    })
+  }
 
   const filteredMails = useMemo(() => {
     if (!search.trim()) return mails
@@ -71,16 +88,31 @@ export default function MailList({ mails, selectedMail, onSelect }) {
                 <div className="flex items-baseline justify-between gap-2 mb-0.5">
                   <span className={`text-sm truncate flex items-center gap-1.5 ${isSelected ? 'font-semibold text-base-content' : isUnread ? 'font-semibold text-base-content' : 'text-base-content/50'}`}>
                     {isUnread && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                    {hasCode && <KeyRound size={12} className="text-primary shrink-0" />}
                     <span className="truncate">{mail.from}</span>
                   </span>
                   <span className="text-[11px] text-base-content/30 shrink-0 tabular-nums">
                     {formatMailTime(mail.created_at, t)}
                   </span>
                 </div>
-                <p className={`text-xs truncate ${isUnread ? 'text-base-content/70 font-medium' : 'text-base-content/50'}`}>
-                  {mail.subject || t('mailList.noSubject')}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className={`text-xs truncate flex-1 ${isUnread ? 'text-base-content/70 font-medium' : 'text-base-content/50'}`}>
+                    {mail.subject || t('mailList.noSubject')}
+                  </p>
+                  {hasCode && (
+                    <button
+                      onClick={(e) => handleCopyCode(e, mail)}
+                      className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold transition-all cursor-pointer ${
+                        copiedId === mail.id
+                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                          : 'bg-primary/10 text-primary hover:bg-primary/20'
+                      }`}
+                      title={t('mailDetail.clickToCopy')}
+                    >
+                      {copiedId === mail.id ? <Check size={10} /> : <KeyRound size={10} />}
+                      <span className="tracking-wider">{mail.extracted_codes[0]}</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )
           })}

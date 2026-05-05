@@ -58,6 +58,7 @@
     "to": "To:",
     "noSubject": "(no subject)",
     "verificationCodes": "Verification Codes",
+    "clickToCopy": "Click a code to copy",
     "extractedLinks": "Links",
     "back": "Back",
     "codeCopied": "Code copied!"

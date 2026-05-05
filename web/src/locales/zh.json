@@ -58,6 +58,7 @@
     "to": "收件人：",
     "noSubject": "(无主题)",
     "verificationCodes": "验证码",
+    "clickToCopy": "点击验证码即可复制",
     "extractedLinks": "链接",
     "back": "返回",
     "codeCopied": "验证码已复制！"
