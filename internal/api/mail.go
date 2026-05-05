@@ -35,3 +35,26 @@ func (rt *Router) handleMails(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, mails)
 }
+
+// handleRecentMails responds to GET /api/mails/recent with the latest mails across all mailboxes.
+func (rt *Router) handleRecentMails(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
+		return
+	}
+
+	lang := i18n.LangFromRequest(r)
+
+	mails, err := rt.mailStore.ListRecent(50)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, i18n.T(lang, "list_mails_failed"))
+		return
+	}
+
+	if mails == nil {
+		writeJSON(w, http.StatusOK, []any{})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, mails)
+}

@@ -219,6 +219,42 @@ func (s *Store) GetByID(id int64) (*Mail, error) {
 	return &m, nil
 }
 
+// ListRecent returns the most recent mails across all short IDs.
+func (s *Store) ListRecent(limit int) ([]Mail, error) {
+	rows, err := s.db.Query(
+		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, extracted_codes, extracted_links, created_at
+		 FROM mails
+		 ORDER BY created_at DESC
+		 LIMIT ?`,
+		limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var mails []Mail
+	for rows.Next() {
+		var m Mail
+		var isRead int
+		var codesJSON, linksJSON string
+		if err := rows.Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &codesJSON, &linksJSON, &m.CreatedAt); err != nil {
+			return nil, err
+		}
+		m.IsRead = isRead != 0
+		json.Unmarshal([]byte(codesJSON), &m.ExtractedCodes)
+		json.Unmarshal([]byte(linksJSON), &m.ExtractedLinks)
+		if m.ExtractedCodes == nil {
+			m.ExtractedCodes = []string{}
+		}
+		if m.ExtractedLinks == nil {
+			m.ExtractedLinks = []string{}
+		}
+		mails = append(mails, m)
+	}
+	return mails, rows.Err()
+}
+
 // CountByShortID returns the total number of mails for the given short ID.
 func (s *Store) CountByShortID(shortID string) (int, error) {
 	var count int

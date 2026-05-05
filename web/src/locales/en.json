@@ -65,6 +65,11 @@
   "mailHistory": {
     "recent": "Recent:"
   },
+  "recentMails": {
+    "title": "Recent Mails",
+    "empty": "No recent emails.",
+    "open": "Open"
+  },
   "mailboxTabs": {
     "add": "Add Mailbox",
     "closeAll": "Close all"

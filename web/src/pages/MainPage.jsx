@@ -5,6 +5,7 @@ import MailboxTabs from '../components/MailboxTabs'
 import MailHistory from '../components/MailHistory'
 import MailList from '../components/MailList'
 import MailDetail from '../components/MailDetail'
+import RecentMails from '../components/RecentMails'
 import HelpModal from '../components/HelpModal'
 import useWebSocket from '../hooks/useWebSocket'
 import { useAuth } from '../App'
@@ -15,6 +16,7 @@ export default function MainPage() {
     shortId, requestNewShortId,
     tabs, activeShortId, setActiveShortId, subscribeToShortId, unsubscribeFromShortId,
     mails, selectedMail, setSelectedMail, clearMails, markMailAsRead,
+    recentMails, loadRecentMails,
   } = useWebSocket(config?.host)
 
   const [mobileView, setMobileView] = useState('list')
@@ -27,6 +29,12 @@ export default function MainPage() {
   const handleMobileBack = useCallback(() => {
     setMobileView('list')
   }, [])
+
+  const handleOpenRecentMail = useCallback((mail) => {
+    subscribeToShortId(mail.short_id)
+    setSelectedMail(mail)
+    setMobileView('detail')
+  }, [subscribeToShortId, setSelectedMail])
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -42,6 +50,10 @@ export default function MainPage() {
           host={config?.host}
           activeShortId={activeShortId}
           onSelect={subscribeToShortId}
+        />
+        <RecentMails
+          recentMails={recentMails}
+          onOpenMail={handleOpenRecentMail}
         />
         <div className="mt-3">
           <MailboxTabs

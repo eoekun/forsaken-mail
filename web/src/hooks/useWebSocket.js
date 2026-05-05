@@ -9,10 +9,12 @@ export default function useWebSocket(host) {
   const [mailboxMap, setMailboxMap] = useState(new Map())
   const [activeShortId, setActiveShortId] = useState('')
   const [selectedMail, setSelectedMail] = useState(null)
+  const [recentMails, setRecentMails] = useState([])
   const wsRef = useRef(null)
   const reconnectTimer = useRef(null)
   const delayRef = useRef(1000)
   const activeShortIdRef = useRef(activeShortId)
+  const loadRecentMailsRef = useRef(null)
 
   useEffect(() => {
     activeShortIdRef.current = activeShortId
@@ -114,6 +116,7 @@ export default function useWebSocket(host) {
             if ('Notification' in window && Notification.permission === 'granted') {
               new Notification(i18n.t('notification.newMail', { from: mailData.from }))
             }
+            loadRecentMailsRef.current?.()
             break
           }
           case 'error':
@@ -139,6 +142,7 @@ export default function useWebSocket(host) {
 
   useEffect(() => {
     connect()
+    loadRecentMails()
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
@@ -189,6 +193,15 @@ export default function useWebSocket(host) {
     }
   }, [activeShortId, mailboxMap])
 
+  const loadRecentMails = useCallback(() => {
+    apiGet('/api/mails/recent')
+      .then(mails => {
+        if (Array.isArray(mails)) setRecentMails(mails)
+      })
+      .catch(() => {})
+  }, [])
+  loadRecentMailsRef.current = loadRecentMails
+
   const requestNewShortId = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'request_shortid' }))
@@ -236,6 +249,8 @@ export default function useWebSocket(host) {
     setSelectedMail,
     clearMails,
     markMailAsRead,
+    recentMails,
+    loadRecentMails,
   }
 }
 

@@ -65,6 +65,11 @@
   "mailHistory": {
     "recent": "最近："
   },
+  "recentMails": {
+    "title": "最近邮件",
+    "empty": "暂无最近邮件。",
+    "open": "查看"
+  },
   "mailboxTabs": {
     "add": "添加邮箱",
     "closeAll": "全部关闭"

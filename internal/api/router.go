@@ -134,8 +134,12 @@ func (rt *Router) routeAuth(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-// routeMailsSubpath dispatches /api/mails/{id}/read.
+// routeMailsSubpath dispatches /api/mails/{id}/read and /api/mails/recent.
 func (rt *Router) routeMailsSubpath(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/api/mails/recent" {
+		rt.handleRecentMails(w, r)
+		return
+	}
 	if strings.HasSuffix(r.URL.Path, "/read") {
 		rt.handleMailRead(w, r)
 		return
