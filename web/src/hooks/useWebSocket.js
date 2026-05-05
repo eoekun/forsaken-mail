@@ -254,6 +254,16 @@ export default function useWebSocket(host) {
   }
 }
 
+function normalizeMail(m) {
+  return {
+    ...m,
+    from: m.from || m.from_addr,
+    to: m.to || m.to_addr,
+    html: m.html || m.html_body,
+    text: m.text || m.text_body,
+  }
+}
+
 function fetchStoredMails(shortId, setMailboxMap) {
   apiGet(`/api/mails?shortId=${encodeURIComponent(shortId)}`)
     .then(mails => {
@@ -262,7 +272,7 @@ function fetchStoredMails(shortId, setMailboxMap) {
         const next = new Map(prev)
         const existing = next.get(shortId) || { mails: [], unreadCount: 0 }
         const existingIds = new Set(existing.mails.map(m => m.id))
-        const newMails = mails.filter(m => !existingIds.has(m.id))
+        const newMails = mails.filter(m => !existingIds.has(m.id)).map(normalizeMail)
         if (newMails.length === 0) return prev
         const merged = [...existing.mails, ...newMails].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         const unreadCount = merged.filter(m => !m.is_read).length

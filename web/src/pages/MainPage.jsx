@@ -31,8 +31,15 @@ export default function MainPage() {
   }, [])
 
   const handleOpenRecentMail = useCallback((mail) => {
-    subscribeToShortId(mail.short_id)
-    setSelectedMail(mail)
+    subscribeToShortId(mail.short_id || (mail.to_addr || mail.to || '').split('@')[0])
+    // Normalize API field names to match MailDetail expectations
+    setSelectedMail({
+      ...mail,
+      from: mail.from || mail.from_addr,
+      to: mail.to || mail.to_addr,
+      html: mail.html || mail.html_body,
+      text: mail.text || mail.text_body,
+    })
     setMobileView('detail')
   }, [subscribeToShortId, setSelectedMail])
 

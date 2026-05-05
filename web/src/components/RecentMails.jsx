@@ -38,6 +38,8 @@ export default function RecentMails({ recentMails, onOpenMail }) {
         <div className="divide-y divide-base-300/40 border-t border-base-300/40">
           {recentMails.map((mail) => {
             const hasCode = (mail.extracted_codes?.length || 0) > 0
+            const recipient = mail.short_id || (mail.to_addr || mail.to || '').split('@')[0]
+            const sender = mail.from_addr || mail.from || ''
             return (
               <div
                 key={mail.id}
@@ -46,10 +48,12 @@ export default function RecentMails({ recentMails, onOpenMail }) {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-mono text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded shrink-0">
-                      {mail.short_id}
-                    </span>
-                    <span className="text-xs text-base-content/50 truncate">{mail.from_addr || mail.from}</span>
+                    {recipient && (
+                      <span className="text-xs font-mono text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded shrink-0">
+                        {recipient}
+                      </span>
+                    )}
+                    <span className="text-xs text-base-content/50 truncate">{sender}</span>
                     {hasCode && <KeyRound size={11} className="text-primary shrink-0" />}
                   </div>
                   <p className="text-xs text-base-content/60 truncate">{mail.subject || t('mailList.noSubject')}</p>
