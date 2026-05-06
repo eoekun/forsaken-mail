@@ -137,7 +137,7 @@ func TestListAll_FilterByQuery(t *testing.T) {
 	insertTestMail(t, s, "u2", "b@test.com", "welcome")
 	insertTestMail(t, s, "u3", "c@test.com", "your verification code 123")
 
-	mails, total, err := s.ListAll(1, 20, "", "", "verification")
+	_, total, err := s.ListAll(1, 20, "", "", "verification")
 	if err != nil {
 		t.Fatal(err)
 	}
