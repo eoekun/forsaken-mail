@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -84,8 +85,12 @@ func scanMail(scanner interface{ Scan(dest ...any) error }) (*Mail, error) {
 		return nil, err
 	}
 	m.IsRead = isRead != 0
-	json.Unmarshal([]byte(codesJSON), &m.ExtractedCodes)
-	json.Unmarshal([]byte(linksJSON), &m.ExtractedLinks)
+	if err := json.Unmarshal([]byte(codesJSON), &m.ExtractedCodes); err != nil {
+		slog.Warn("bad extracted_codes JSON", "id", m.ID, "error", err)
+	}
+	if err := json.Unmarshal([]byte(linksJSON), &m.ExtractedLinks); err != nil {
+		slog.Warn("bad extracted_links JSON", "id", m.ID, "error", err)
+	}
 	if m.ExtractedCodes == nil {
 		m.ExtractedCodes = []string{}
 	}

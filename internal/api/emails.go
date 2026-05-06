@@ -168,17 +168,9 @@ func (rt *Router) handleDeleteEmail(w http.ResponseWriter, r *http.Request, id i
 
 // handleMailRead handles PUT /api/mails/{id}/read to mark a mail as read.
 func (rt *Router) handleMailRead(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
-		return
-	}
-
 	lang := i18n.LangFromRequest(r)
 
-	// Extract ID from path: /api/mails/{id}/read
-	path := strings.TrimPrefix(r.URL.Path, "/api/mails/")
-	path = strings.TrimSuffix(path, "/read")
-	id, err := strconv.ParseInt(path, 10, 64)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, i18n.T(lang, "invalid_mail_id"))
 		return

@@ -1,23 +1,11 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Inbox, KeyRound, Search, Check, X } from 'lucide-react'
-import { formatRelativeTime, formatAbsoluteTime } from '../lib/formatTime'
-import { formatSender } from '../lib/formatSender'
-import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
-import useRelativeTime from '../hooks/useRelativeTime'
+import { Inbox, Search, X } from 'lucide-react'
+import MailListItem from './MailListItem'
 
 export default function MailList({ mails, selectedMail, onSelect }) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
-  useRelativeTime()
-  const { copiedId, copy } = useCopyToClipboard()
-
-  const handleCopyCode = (e, mail) => {
-    e.stopPropagation()
-    const code = mail.extracted_codes?.[0]
-    if (!code) return
-    copy(code, mail.id)
-  }
 
   const filteredMails = useMemo(() => {
     if (!search.trim()) return mails
@@ -27,19 +15,6 @@ export default function MailList({ mails, selectedMail, onSelect }) {
       (m.subject || '').toLowerCase().includes(q)
     )
   }, [mails, search])
-
-  const highlightMatch = (text, query) => {
-    if (!query.trim() || !text) return text
-    const idx = text.toLowerCase().indexOf(query.toLowerCase())
-    if (idx === -1) return text
-    return (
-      <>
-        {text.slice(0, idx)}
-        <mark className="bg-warning/30 text-inherit rounded-sm px-0.5">{text.slice(idx, idx + query.length)}</mark>
-        {text.slice(idx + query.length)}
-      </>
-    )
-  }
 
   return (
     <div className="card-modern h-full flex flex-col">
@@ -76,51 +51,16 @@ export default function MailList({ mails, selectedMail, onSelect }) {
           </div>
         ) : (
           <div className="divide-y divide-base-300/40">
-            {filteredMails.map((mail, idx) => {
-              const isUnread = !mail.is_read
-              const hasCode = (mail.extracted_codes?.length || 0) > 0
-              const isSelected = selectedMail === mail
-              return (
-                <div
-                  key={mail.id || idx}
-                  className={`px-3 py-2.5 sm:px-4 sm:py-3 cursor-pointer transition-all duration-150 ${
-                    isSelected
-                      ? 'bg-primary/5 border-l-3 border-l-primary'
-                      : `border-l-3 border-l-transparent hover:bg-base-200 ${isUnread ? 'font-semibold' : 'font-normal opacity-70'}`
-                  }`}
-                  onClick={() => onSelect(mail)}
-                >
-                  <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                    <span className={`text-sm truncate flex items-center gap-1.5 ${isSelected ? 'font-semibold text-base-content' : isUnread ? 'font-semibold text-base-content' : 'text-base-content/50'}`}>
-                      {isUnread && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                      <span className="truncate" title={mail.from}>{search ? highlightMatch(formatSender(mail.from), search) : formatSender(mail.from)}</span>
-                    </span>
-                    <span className="text-[11px] text-base-content/30 shrink-0" title={formatAbsoluteTime(mail.created_at)}>
-                      {formatRelativeTime(mail.created_at)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <p className={`text-xs truncate flex-1 ${isUnread ? 'text-base-content/70 font-medium' : 'text-base-content/50'}`}>
-                      {search ? highlightMatch(mail.subject || t('mailList.noSubject'), search) : (mail.subject || t('mailList.noSubject'))}
-                    </p>
-                    {hasCode && (
-                      <button
-                        onClick={(e) => handleCopyCode(e, mail)}
-                        className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold transition-all cursor-pointer ${
-                          copiedId === mail.id
-                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                            : 'bg-primary/10 text-primary hover:bg-primary/20'
-                        }`}
-                        title={t('mailDetail.clickToCopy')}
-                      >
-                        {copiedId === mail.id ? <Check size={10} /> : <KeyRound size={10} />}
-                        <span className="tracking-wider">{mail.extracted_codes[0]}</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+            {filteredMails.map((mail, idx) => (
+              <MailListItem
+                key={mail.id || idx}
+                mail={mail}
+                isSelected={selectedMail === mail}
+                onClick={() => onSelect(mail)}
+                unread={!mail.is_read}
+                highlight={search}
+              />
+            ))}
           </div>
         )}
       </div>

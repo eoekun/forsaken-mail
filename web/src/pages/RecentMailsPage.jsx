@@ -1,20 +1,18 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Search, Mail, ArrowLeft, KeyRound, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Mail, ArrowLeft, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiGet } from '../lib/api'
 import { formatSender } from '../lib/formatSender'
-import { formatRelativeTime, formatAbsoluteTime } from '../lib/formatTime'
-import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import useRelativeTime from '../hooks/useRelativeTime'
 import { normalizeMail } from '../lib/normalizeMail'
 import MailDetail from '../components/MailDetail'
+import MailListItem from '../components/MailListItem'
 
 const PAGE_SIZE = 20
 
 export default function RecentMailsPage() {
   const { t } = useTranslation()
-  const { copiedId, copy } = useCopyToClipboard()
   useRelativeTime()
 
   const [emails, setEmails] = useState([])
@@ -88,13 +86,6 @@ export default function RecentMailsPage() {
     setFilterFrom(value)
     setPage(1)
   }, [])
-
-  const handleCopyCode = useCallback((e, mail) => {
-    e.stopPropagation()
-    const code = mail.extracted_codes?.[0]
-    if (!code) return
-    copy(code, mail.id)
-  }, [copy])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
@@ -181,16 +172,13 @@ export default function RecentMailsPage() {
               ) : (
                 <div className="divide-y divide-base-300/40">
                   {emails.map((mail) => {
-                    const hasCode = (mail.extracted_codes?.length || 0) > 0
                     const isSelected = selectedMail?.id === mail.id
                     return (
-                      <div
+                      <MailListItem
                         key={mail.id}
-                        className={`px-4 py-3 cursor-pointer transition-all duration-150 ${
-                          isSelected
-                            ? 'bg-primary/5 border-l-3 border-l-primary'
-                            : 'border-l-3 border-l-transparent hover:bg-base-200'
-                        }`}
+                        mail={mail}
+                        isSelected={isSelected}
+                        badge={mail.short_id}
                         onClick={async () => {
                           try {
                             const full = await apiGet(`/api/mails/${mail.id}`)
@@ -199,36 +187,7 @@ export default function RecentMailsPage() {
                             setSelectedMail(normalizeMail(mail))
                           }
                         }}
-                      >
-                        <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                          <span className={`text-sm truncate ${isSelected ? 'font-semibold text-base-content' : 'text-base-content/70'}`} title={mail.from_addr || mail.from}>
-                            {formatSender(mail.from_addr || mail.from)}
-                          </span>
-                          <span className="text-[11px] text-base-content/30 shrink-0" title={formatAbsoluteTime(mail.created_at)}>
-                            {formatRelativeTime(mail.created_at)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-mono text-primary/60 bg-primary/5 px-1 py-0.5 rounded shrink-0">
-                            {mail.short_id}
-                          </span>
-                          <p className="text-xs text-base-content/50 truncate flex-1">{mail.subject || t('mailList.noSubject')}</p>
-                          {hasCode && (
-                            <button
-                              onClick={(e) => handleCopyCode(e, mail)}
-                              className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold transition-all cursor-pointer ${
-                                copiedId === mail.id
-                                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                                  : 'bg-primary/10 text-primary hover:bg-primary/20'
-                              }`}
-                              title={t('mailDetail.clickToCopy')}
-                            >
-                              {copiedId === mail.id ? <Check size={10} /> : <KeyRound size={10} />}
-                              <span className="tracking-wider">{mail.extracted_codes[0]}</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                      />
                     )
                   })}
                 </div>

@@ -3,8 +3,6 @@ package api
 import (
 	"log/slog"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"forsaken-mail/internal/audit"
@@ -80,8 +78,12 @@ func (rt *Router) Handler() http.Handler {
 	mux.Handle("/api/config", rt.authMW.OptionalAuth(http.HandlerFunc(rt.handleConfig)))
 
 	// Protected routes (auth middleware applied).
-	mux.Handle("/api/mails", rt.authMW.Wrap(http.HandlerFunc(rt.handleMails)))
-	mux.Handle("/api/mails/", rt.authMW.Wrap(http.HandlerFunc(rt.routeMailsSubpath)))
+	mux.Handle("GET /api/mails", rt.authMW.Wrap(http.HandlerFunc(rt.handleMails)))
+	mux.Handle("GET /api/mails/recent", rt.authMW.Wrap(http.HandlerFunc(rt.handleRecentMails)))
+	mux.Handle("GET /api/mails/all", rt.authMW.Wrap(http.HandlerFunc(rt.handleAllMails)))
+	mux.Handle("GET /api/mails/filters", rt.authMW.Wrap(http.HandlerFunc(rt.handleMailFilters)))
+	mux.Handle("GET /api/mails/{id}", rt.authMW.Wrap(http.HandlerFunc(rt.handleGetMail)))
+	mux.Handle("PUT /api/mails/{id}/read", rt.authMW.Wrap(http.HandlerFunc(rt.handleMailRead)))
 	mux.Handle("/api/emails/", rt.authMW.Wrap(http.HandlerFunc(rt.handleEmails)))
 	mux.Handle("/api/domain-test", rt.authMW.Wrap(http.HandlerFunc(rt.handleDomainTest)))
 	mux.Handle("/api/webhook/test", rt.authMW.Wrap(http.HandlerFunc(rt.handleWebhookTest)))
@@ -137,37 +139,6 @@ func (rt *Router) routeAuth(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.NotFound(w, r)
-}
-
-// routeMailsSubpath dispatches /api/mails/{id}/read and /api/mails/recent.
-func (rt *Router) routeMailsSubpath(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/api/mails/recent" {
-		rt.handleRecentMails(w, r)
-		return
-	}
-	if r.URL.Path == "/api/mails/all" {
-		rt.handleAllMails(w, r)
-		return
-	}
-	if r.URL.Path == "/api/mails/filters" {
-		rt.handleMailFilters(w, r)
-		return
-	}
-	if strings.HasSuffix(r.URL.Path, "/read") {
-		rt.handleMailRead(w, r)
-		return
-	}
-	// GET /api/mails/{id} — single mail by ID
-	if r.Method == http.MethodGet {
-		idStr := strings.TrimPrefix(r.URL.Path, "/api/mails/")
-		if idStr != "" && !strings.Contains(idStr, "/") {
-			if id, err := strconv.ParseInt(idStr, 10, 64); err == nil {
-				rt.handleGetMail(w, r, id)
-				return
-			}
-		}
-	}
 	http.NotFound(w, r)
 }
 
