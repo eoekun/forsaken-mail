@@ -7,6 +7,9 @@ import ErrorBoundary from './components/ErrorBoundary'
 import LoginPage from './pages/LoginPage'
 import MainPage from './pages/MainPage'
 import AdminPage from './pages/AdminPage'
+import AuditLogTab from './components/AuditLogTab'
+import SettingsTab from './components/SettingsTab'
+import StatusTab from './components/StatusTab'
 
 const AuthContext = createContext(null)
 const ThemeContext = createContext(null)
@@ -86,7 +89,12 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/" element={isAuthenticated ? <MainPage /> : <Navigate to="/login" />} />
-                <Route path="/admin" element={isAuthenticated ? <AdminPage /> : <Navigate to="/login" />} />
+                <Route path="/admin" element={isAuthenticated ? <AdminPage /> : <Navigate to="/login" />}>
+                  <Route index element={<Navigate to="audit" replace />} />
+                  <Route path="audit" element={<AuditLogTab />} />
+                  <Route path="settings" element={<SettingsTab />} />
+                  <Route path="status" element={<StatusTab />} />
+                </Route>
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </ErrorBoundary>

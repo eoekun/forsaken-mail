@@ -43,16 +43,6 @@ export default function MailDetail({ mail, onMailRead, onBack }) {
   return (
     <div className="card-modern">
       <div className="p-3 sm:p-5">
-        {onBack && (
-          <button
-            className="btn btn-sm btn-ghost mb-3 lg:hidden"
-            onClick={onBack}
-          >
-            <ArrowLeft size={16} />
-            {t('mailDetail.back')}
-          </button>
-        )}
-
         <div className="mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2">
             <span className="text-base sm:text-lg font-semibold text-base-content truncate">{mail.from}</span>
@@ -131,6 +121,15 @@ export default function MailDetail({ mail, onMailRead, onBack }) {
           </div>
         )}
       </div>
+      {onBack && (
+        <button
+          className="lg:hidden fixed bottom-4 left-4 right-4 btn btn-primary btn-sm gap-2 z-30 shadow-lg"
+          onClick={onBack}
+        >
+          <ArrowLeft size={16} />
+          {t('mailDetail.back')}
+        </button>
+      )}
     </div>
   )
 }

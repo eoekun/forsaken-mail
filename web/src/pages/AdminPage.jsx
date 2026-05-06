@@ -1,10 +1,7 @@
-import { useState } from 'react'
+import { NavLink, Navigate, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ClipboardList, Settings2, Activity } from 'lucide-react'
 import Navbar from '../components/Navbar'
-import AuditLogTab from '../components/AuditLogTab'
-import SettingsTab from '../components/SettingsTab'
-import StatusTab from '../components/StatusTab'
 
 const TABS = [
   { key: 'audit', icon: ClipboardList },
@@ -14,7 +11,6 @@ const TABS = [
 
 export default function AdminPage() {
   const { t } = useTranslation()
-  const [tab, setTab] = useState('audit')
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -23,23 +19,23 @@ export default function AdminPage() {
         <h1 className="text-xl font-bold text-base-content mb-4">{t('admin.pageTitle')}</h1>
         <div className="flex items-center gap-1 border-b border-base-300/60 mb-6">
           {TABS.map(({ key, icon: Icon }) => (
-            <button
+            <NavLink
               key={key}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors duration-150 inline-flex items-center gap-1.5 ${
-                tab === key
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-base-content/50 hover:text-base-content/70 hover:border-base-300'
-              }`}
-              onClick={() => setTab(key)}
+              to={`/admin/${key}`}
+              className={({ isActive }) =>
+                `px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors duration-150 inline-flex items-center gap-1.5 ${
+                  isActive
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-base-content/50 hover:text-base-content/70 hover:border-base-300'
+                }`
+              }
             >
               <Icon size={15} />
               {t(`admin.${key === 'audit' ? 'auditLogs' : key}`)}
-            </button>
+            </NavLink>
           ))}
         </div>
-        {tab === 'audit' && <AuditLogTab />}
-        {tab === 'settings' && <SettingsTab />}
-        {tab === 'status' && <StatusTab />}
+        <Outlet />
       </div>
     </div>
   )

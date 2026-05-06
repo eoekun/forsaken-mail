@@ -1,11 +1,8 @@
 import { useState, useCallback } from 'react'
 import Navbar from '../components/Navbar'
-import MailboxAddress from '../components/MailboxAddress'
 import MailboxTabs from '../components/MailboxTabs'
-import MailHistory from '../components/MailHistory'
 import MailList from '../components/MailList'
 import MailDetail from '../components/MailDetail'
-import RecentMails from '../components/RecentMails'
 import HelpModal from '../components/HelpModal'
 import useWebSocket from '../hooks/useWebSocket'
 import { normalizeMail } from '../lib/normalizeMail'
@@ -16,8 +13,8 @@ export default function MainPage() {
   const {
     requestNewShortId,
     tabs, activeShortId, setActiveShortId, subscribeToShortId, unsubscribeFromShortId,
-    mails, selectedMail, setSelectedMail, clearMails, markMailAsRead,
-    recentMails, loadRecentMails,
+    mails, selectedMail, setSelectedMail, markMailAsRead,
+    recentMails,
   } = useWebSocket(config?.host)
 
   const [mobileView, setMobileView] = useState('list')
@@ -38,37 +35,21 @@ export default function MainPage() {
   }, [subscribeToShortId, setSelectedMail])
 
   return (
-    <div className="min-h-screen bg-base-200">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
-        <MailboxAddress
-          shortId={activeShortId}
+    <div className="min-h-screen bg-base-200 flex flex-col">
+      <Navbar recentMails={recentMails} onOpenRecentMail={handleOpenRecentMail} />
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 flex-1 flex flex-col min-h-0 pb-6">
+        <MailboxTabs
+          tabs={tabs}
+          activeShortId={activeShortId}
           host={config?.host}
-          onRefresh={requestNewShortId}
+          onSelect={setActiveShortId}
+          onClose={unsubscribeFromShortId}
+          onAdd={requestNewShortId}
           onSetShortId={subscribeToShortId}
         />
-        <MailHistory
-          host={config?.host}
-          activeShortId={activeShortId}
-          onSelect={subscribeToShortId}
-        />
-        <RecentMails
-          recentMails={recentMails}
-          onOpenMail={handleOpenRecentMail}
-        />
-        <div className="mt-3">
-          <MailboxTabs
-            tabs={tabs}
-            activeShortId={activeShortId}
-            host={config?.host}
-            onSelect={setActiveShortId}
-            onClose={unsubscribeFromShortId}
-            onAdd={requestNewShortId}
-          />
-        </div>
 
         {/* Mobile layout: toggle between list and detail */}
-        <div className="lg:hidden mt-4">
+        <div className="lg:hidden flex-1 min-h-0 mt-3">
           {mobileView === 'list' ? (
             <MailList
               mails={mails}
@@ -85,15 +66,15 @@ export default function MainPage() {
         </div>
 
         {/* Desktop layout: side-by-side grid */}
-        <div className="hidden lg:grid grid-cols-5 gap-4 mt-4">
-          <div className="col-span-2">
+        <div className="hidden lg:grid grid-cols-5 gap-4 flex-1 min-h-0 mt-3">
+          <div className="col-span-2 min-h-0">
             <MailList
               mails={mails}
               selectedMail={selectedMail}
               onSelect={setSelectedMail}
             />
           </div>
-          <div className="col-span-3">
+          <div className="col-span-3 min-h-0">
             <MailDetail mail={selectedMail} onMailRead={markMailAsRead} />
           </div>
         </div>

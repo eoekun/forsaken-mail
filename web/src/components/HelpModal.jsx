@@ -66,10 +66,10 @@ export default function HelpModal({ host }) {
   return (
     <>
       <button
-        className="btn btn-circle btn-sm fixed bottom-6 right-6 bg-base-100 border border-base-300/60 shadow-lg hover:shadow-xl text-base-content/50 hover:text-primary z-40"
+        className="btn btn-circle btn-xs fixed bottom-6 right-6 bg-base-100 border border-base-300/60 shadow-md hover:shadow-lg text-base-content/40 hover:text-primary z-40"
         onClick={() => modalRef.current?.showModal()}
       >
-        <HelpCircle size={18} />
+        <HelpCircle size={14} />
       </button>
       <dialog ref={modalRef} className="modal">
         <div className="modal-box max-w-2xl rounded-2xl bg-base-100 p-0 overflow-hidden">
