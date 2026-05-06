@@ -157,6 +157,16 @@ func (rt *Router) routeMailsSubpath(w http.ResponseWriter, r *http.Request) {
 		rt.handleMailRead(w, r)
 		return
 	}
+	// GET /api/mails/{id} — single mail by ID
+	if r.Method == http.MethodGet {
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/mails/")
+		if idStr != "" && !strings.Contains(idStr, "/") {
+			if id, err := strconv.ParseInt(idStr, 10, 64); err == nil {
+				rt.handleGetMail(w, r, id)
+				return
+			}
+		}
+	}
 	http.NotFound(w, r)
 }
 

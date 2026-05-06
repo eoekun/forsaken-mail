@@ -7,6 +7,7 @@ import { formatSender } from '../lib/formatSender'
 import { formatRelativeTime, formatAbsoluteTime } from '../lib/formatTime'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import useRelativeTime from '../hooks/useRelativeTime'
+import { normalizeMail } from '../lib/normalizeMail'
 import MailDetail from '../components/MailDetail'
 
 const PAGE_SIZE = 20
@@ -190,10 +191,17 @@ export default function RecentMailsPage() {
                             ? 'bg-primary/5 border-l-3 border-l-primary'
                             : 'border-l-3 border-l-transparent hover:bg-base-200'
                         }`}
-                        onClick={() => setSelectedMail(mail)}
+                        onClick={async () => {
+                          try {
+                            const full = await apiGet(`/api/mails/${mail.id}`)
+                            setSelectedMail(normalizeMail(full))
+                          } catch {
+                            setSelectedMail(normalizeMail(mail))
+                          }
+                        }}
                       >
                         <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                          <span className={`text-sm truncate ${isSelected ? 'font-semibold text-base-content' : 'text-base-content/70'}`}>
+                          <span className={`text-sm truncate ${isSelected ? 'font-semibold text-base-content' : 'text-base-content/70'}`} title={mail.from_addr || mail.from}>
                             {formatSender(mail.from_addr || mail.from)}
                           </span>
                           <span className="text-[11px] text-base-content/30 shrink-0" title={formatAbsoluteTime(mail.created_at)}>
