@@ -19,6 +19,7 @@ func (rt *Router) handleConfig(w http.ResponseWriter, r *http.Request) {
 
 	host, _ := rt.settings.Get("mail_host")
 	siteTitle, _ := rt.settings.Get("site_title")
+	blacklist, _ := rt.settings.Get("keyword_blacklist")
 
 	hosts := mail.ParseDomains(host)
 	if len(hosts) == 0 {
@@ -26,10 +27,11 @@ func (rt *Router) handleConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := map[string]any{
-		"host":       hosts[0],
-		"hosts":      hosts,
-		"site_title": siteTitle,
-		"auth_mode":  rt.cfg.AuthMode,
+		"host":              hosts[0],
+		"hosts":             hosts,
+		"site_title":        siteTitle,
+		"auth_mode":         rt.cfg.AuthMode,
+		"keyword_blacklist": blacklist,
 	}
 
 	// Include user email if authenticated.

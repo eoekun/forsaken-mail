@@ -61,7 +61,7 @@ export default function App() {
     apiGet('/api/config')
       .then(data => {
         const hosts = (data.hosts || [data.host]).map(d => d.trim()).filter(Boolean)
-        setConfig({ host: data.host, hosts, siteTitle: data.site_title, authMode: data.auth_mode })
+        setConfig({ host: data.host, hosts, siteTitle: data.site_title, authMode: data.auth_mode, keywordBlacklist: data.keyword_blacklist || '' })
         if (data.email) {
           setUser({ email: data.email })
         }

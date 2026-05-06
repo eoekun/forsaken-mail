@@ -15,7 +15,7 @@ export default function MainPage() {
     tabs, activeShortId, setActiveShortId, subscribeToShortId, unsubscribeFromShortId,
     mails, selectedMail, setSelectedMail, markMailAsRead,
     recentMails,
-  } = useWebSocket(config?.host)
+  } = useWebSocket(config?.host, config?.keywordBlacklist)
 
   const [mobileView, setMobileView] = useState('list')
 

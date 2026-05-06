@@ -35,7 +35,16 @@ export default function RecentMailsPage() {
   // Fetch filter options on mount
   useEffect(() => {
     apiGet('/api/mails/filters').then(data => {
-      setSenders(data.senders || [])
+      // Deduplicate senders by formatted label
+      const raw = data.senders || []
+      const labelMap = new Map()
+      for (const s of raw) {
+        const label = formatSender(s)
+        if (!labelMap.has(label)) {
+          labelMap.set(label, s)
+        }
+      }
+      setSenders(Array.from(labelMap.entries()).map(([label, value]) => ({ label, value })))
       setRecipients(data.recipients || [])
     }).catch(() => {})
   }, [])
@@ -125,7 +134,7 @@ export default function RecentMailsPage() {
               onChange={e => handleFromChange(e.target.value)}
             >
               <option value="">{t('recentMails.filterAll')}</option>
-              {senders.map(s => <option key={s} value={s}>{formatSender(s)}</option>)}
+              {senders.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
 

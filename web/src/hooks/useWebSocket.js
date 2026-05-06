@@ -5,7 +5,7 @@ import { normalizeMail } from '../lib/normalizeMail'
 
 const TABS_STORAGE_KEY = 'mailbox_tabs_v1'
 
-export default function useWebSocket(host) {
+export default function useWebSocket(host, keywordBlacklist) {
   // Map<shortId, {mails: [], unreadCount: number}>
   const [mailboxMap, setMailboxMap] = useState(new Map())
   const [activeShortId, setActiveShortId] = useState('')
@@ -17,6 +17,16 @@ export default function useWebSocket(host) {
   const activeShortIdRef = useRef(activeShortId)
   const loadRecentMailsRef = useRef(null)
   const hasConnectedRef = useRef(false)
+  const blacklistRef = useRef([])
+
+  // Update blacklist ref when it changes
+  useEffect(() => {
+    if (keywordBlacklist) {
+      blacklistRef.current = keywordBlacklist.split(',').map(k => k.trim().toLowerCase()).filter(Boolean)
+    } else {
+      blacklistRef.current = []
+    }
+  }, [keywordBlacklist])
 
   useEffect(() => {
     activeShortIdRef.current = activeShortId
@@ -61,23 +71,25 @@ export default function useWebSocket(host) {
 
       const savedSingle = localStorage.getItem('shortid')
       if (savedTabs.length > 0) {
+        // Filter out blacklisted IDs
+        const validTabs = savedTabs.filter(id => !blacklistRef.current.some(kw => id.toLowerCase().includes(kw)))
         // Subscribe to all saved tabs
-        for (const id of savedTabs) {
+        for (const id of validTabs) {
           ws.send(JSON.stringify({ type: 'subscribe', short_id: id }))
         }
-        setActiveShortId(prev => prev && savedTabs.includes(prev) ? prev : savedTabs[0])
+        setActiveShortId(prev => prev && validTabs.includes(prev) ? prev : validTabs[0])
         // Initialize mailboxMap for saved tabs
         setMailboxMap(prev => {
           const next = new Map(prev)
-          for (const id of savedTabs) {
+          for (const id of validTabs) {
             if (!next.has(id)) {
               next.set(id, { mails: [], unreadCount: 0 })
             }
           }
           return next
         })
-        for (const id of savedTabs) fetchStoredMails(id, setMailboxMap)
-      } else if (savedSingle) {
+        for (const id of validTabs) fetchStoredMails(id, setMailboxMap)
+      } else if (savedSingle && !blacklistRef.current.some(kw => savedSingle.toLowerCase().includes(kw))) {
         ws.send(JSON.stringify({ type: 'subscribe', short_id: savedSingle }))
         setActiveShortId(savedSingle)
         setMailboxMap(new Map([[savedSingle, { mails: [], unreadCount: 0 }]]))
@@ -128,6 +140,24 @@ export default function useWebSocket(host) {
           }
           case 'error':
             console.error('WS error:', msg.message)
+            // If the error is about a blacklisted short_id, roll back
+            if (msg.message && msg.message.includes('blacklist')) {
+              // Find and remove the last attempted subscription
+              // We can't know which ID caused it, but we can clean up any
+              // IDs that are in the blacklist
+              setMailboxMap(prev => {
+                const next = new Map(prev)
+                let changed = false
+                for (const [id] of next) {
+                  if (blacklistRef.current.some(kw => id.toLowerCase().includes(kw))) {
+                    next.delete(id)
+                    removeFromHistory(id)
+                    changed = true
+                  }
+                }
+                return changed ? next : prev
+              })
+            }
             break
         }
       } catch (e) {
@@ -160,6 +190,13 @@ export default function useWebSocket(host) {
   }, [connect])
 
   const subscribeToShortId = useCallback((id) => {
+    // Client-side blacklist check
+    const lower = id.toLowerCase()
+    if (blacklistRef.current.some(kw => lower.includes(kw))) {
+      console.warn('short_id blocked by keyword blacklist:', id)
+      return
+    }
+
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'subscribe', short_id: id }))
     }
@@ -279,6 +316,22 @@ function fetchStoredMails(shortId, setMailboxMap) {
       })
     })
     .catch(() => {})
+}
+
+function removeFromHistory(shortId) {
+  try {
+    const raw = localStorage.getItem(TABS_STORAGE_KEY)
+    let list = raw ? JSON.parse(raw) : []
+    if (!Array.isArray(list)) list = []
+    list = list.filter(id => id !== shortId)
+    localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(list))
+
+    const raw2 = localStorage.getItem('shortid_history_v1')
+    let list2 = raw2 ? JSON.parse(raw2) : []
+    if (!Array.isArray(list2)) list2 = []
+    list2 = list2.filter(id => id !== shortId)
+    localStorage.setItem('shortid_history_v1', JSON.stringify(list2))
+  } catch {}
 }
 
 function upsertHistory(shortId) {
