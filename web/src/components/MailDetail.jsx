@@ -46,11 +46,16 @@ export default function MailDetail({ mail, onMailRead, onBack }) {
       <div className="p-3 sm:p-5">
         <div className="mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2">
-            <span className="text-base sm:text-lg font-semibold text-base-content truncate" title={mail.from}>{formatSender(mail.from)}</span>
+            <span className="text-base sm:text-lg font-semibold text-base-content truncate">{formatSender(mail.from)}</span>
             <span className="text-xs sm:text-sm text-base-content/50 shrink-0 tabular-nums">
               {new Date(mail.created_at).toLocaleString()}
             </span>
           </div>
+          {formatSender(mail.from) !== mail.from && (
+            <p className="text-xs text-base-content/40 font-mono truncate mt-0.5" title={mail.from}>
+              {t('mailDetail.from')}: {mail.from}
+            </p>
+          )}
           <p className="text-xs sm:text-sm text-base-content/40 truncate">{t('mailDetail.to')} {mail.to}</p>
           <h2 className="text-sm sm:text-base font-medium text-base-content mt-1">
             {mail.subject || t('mailDetail.noSubject')}
