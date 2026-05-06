@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -242,9 +243,11 @@ func (s *Store) CountByShortID(shortID string) (int, error) {
 
 const mailListColumns = `id, short_id, from_addr, to_addr, subject, '' as text_body, '' as html_body, raw_size, is_read, extracted_codes, extracted_links, created_at`
 
-// ListAll returns paginated mails across all mailboxes, with optional search
-// on subject and from_addr. Returns (mails, total, error).
-func (s *Store) ListAll(page, pageSize int, query string) ([]Mail, int, error) {
+// ListAll returns paginated mails across all mailboxes, with optional filters:
+//   - shortID: exact match on short_id
+//   - from: LIKE match on from_addr
+//   - query: LIKE match on subject
+func (s *Store) ListAll(page, pageSize int, shortID, from, query string) ([]Mail, int, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -253,29 +256,19 @@ func (s *Store) ListAll(page, pageSize int, query string) ([]Mail, int, error) {
 	}
 	offset := (page - 1) * pageSize
 
+	where, args := buildMailFilters(shortID, from, query)
+
 	var total int
-	var countArgs []any
-	countSQL := `SELECT COUNT(*) FROM mails`
-	if query != "" {
-		q := "%" + query + "%"
-		countSQL += ` WHERE subject LIKE ? OR from_addr LIKE ?`
-		countArgs = append(countArgs, q, q)
-	}
-	if err := s.db.QueryRow(countSQL, countArgs...).Scan(&total); err != nil {
+	countSQL := `SELECT COUNT(*) FROM mails` + where
+	if err := s.db.QueryRow(countSQL, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	var rows_args []any
-	rowsSQL := `SELECT ` + mailListColumns + ` FROM mails`
-	if query != "" {
-		q := "%" + query + "%"
-		rowsSQL += ` WHERE subject LIKE ? OR from_addr LIKE ?`
-		rows_args = append(rows_args, q, q)
-	}
-	rowsSQL += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
-	rows_args = append(rows_args, pageSize, offset)
+	rowsSQL := `SELECT ` + mailListColumns + ` FROM mails` + where + ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	rowsArgs := append([]any{}, args...)
+	rowsArgs = append(rowsArgs, pageSize, offset)
 
-	rows, err := s.db.Query(rowsSQL, rows_args...)
+	rows, err := s.db.Query(rowsSQL, rowsArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -290,6 +283,68 @@ func (s *Store) ListAll(page, pageSize int, query string) ([]Mail, int, error) {
 		mails = append(mails, *m)
 	}
 	return mails, total, rows.Err()
+}
+
+// buildMailFilters constructs a WHERE clause and args for the given filters.
+func buildMailFilters(shortID, from, query string) (string, []any) {
+	var conditions []string
+	var args []any
+
+	if shortID != "" {
+		conditions = append(conditions, `short_id = ?`)
+		args = append(args, shortID)
+	}
+	if from != "" {
+		conditions = append(conditions, `from_addr LIKE ?`)
+		args = append(args, "%"+from+"%")
+	}
+	if query != "" {
+		conditions = append(conditions, `subject LIKE ?`)
+		args = append(args, "%"+query+"%")
+	}
+
+	if len(conditions) == 0 {
+		return "", nil
+	}
+	return ` WHERE ` + strings.Join(conditions, " AND "), args
+}
+
+// ListDistinctSenders returns up to limit distinct from_addr values.
+func (s *Store) ListDistinctSenders(limit int) ([]string, error) {
+	rows, err := s.db.Query(`SELECT DISTINCT from_addr FROM mails ORDER BY from_addr LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []string
+	for rows.Next() {
+		var v string
+		if err := rows.Scan(&v); err != nil {
+			return nil, err
+		}
+		result = append(result, v)
+	}
+	return result, rows.Err()
+}
+
+// ListDistinctRecipients returns up to limit distinct short_id values.
+func (s *Store) ListDistinctRecipients(limit int) ([]string, error) {
+	rows, err := s.db.Query(`SELECT DISTINCT short_id FROM mails ORDER BY short_id LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []string
+	for rows.Next() {
+		var v string
+		if err := rows.Scan(&v); err != nil {
+			return nil, err
+		}
+		result = append(result, v)
+	}
+	return result, rows.Err()
 }
 
 // Reextract re-runs code and link extraction on all mails for the given short ID

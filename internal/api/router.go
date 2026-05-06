@@ -149,6 +149,10 @@ func (rt *Router) routeMailsSubpath(w http.ResponseWriter, r *http.Request) {
 		rt.handleAllMails(w, r)
 		return
 	}
+	if r.URL.Path == "/api/mails/filters" {
+		rt.handleMailFilters(w, r)
+		return
+	}
 	if strings.HasSuffix(r.URL.Path, "/read") {
 		rt.handleMailRead(w, r)
 		return

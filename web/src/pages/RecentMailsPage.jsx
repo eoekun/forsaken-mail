@@ -19,15 +19,33 @@ export default function RecentMailsPage() {
   const [emails, setEmails] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [query, setQuery] = useState('')
-  const [searchInput, setSearchInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [selectedMail, setSelectedMail] = useState(null)
 
-  const fetchMails = useCallback(async (p, q) => {
+  // Filter state
+  const [filterShortId, setFilterShortId] = useState('')
+  const [filterFrom, setFilterFrom] = useState('')
+  const [filterQuery, setFilterQuery] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+
+  // Filter options
+  const [senders, setSenders] = useState([])
+  const [recipients, setRecipients] = useState([])
+
+  // Fetch filter options on mount
+  useEffect(() => {
+    apiGet('/api/mails/filters').then(data => {
+      setSenders(data.senders || [])
+      setRecipients(data.recipients || [])
+    }).catch(() => {})
+  }, [])
+
+  const fetchMails = useCallback(async (p, shortId, from, q) => {
     setLoading(true)
     try {
       const params = new URLSearchParams({ page: String(p), pageSize: String(PAGE_SIZE) })
+      if (shortId) params.set('short_id', shortId)
+      if (from) params.set('from', from)
       if (q) params.set('q', q)
       const data = await apiGet(`/api/mails/all?${params}`)
       setEmails(data.emails || [])
@@ -37,17 +55,27 @@ export default function RecentMailsPage() {
     }
   }, [])
 
-  useEffect(() => { fetchMails(page, query) }, [page, query, fetchMails])
+  useEffect(() => { fetchMails(page, filterShortId, filterFrom, filterQuery) }, [page, filterShortId, filterFrom, filterQuery, fetchMails])
 
   const handleSearch = useCallback((e) => {
     e.preventDefault()
     setPage(1)
-    setQuery(searchInput.trim())
+    setFilterQuery(searchInput.trim())
   }, [searchInput])
 
   const handleClearSearch = useCallback(() => {
     setSearchInput('')
-    setQuery('')
+    setFilterQuery('')
+    setPage(1)
+  }, [])
+
+  const handleShortIdChange = useCallback((value) => {
+    setFilterShortId(value)
+    setPage(1)
+  }, [])
+
+  const handleFromChange = useCallback((value) => {
+    setFilterFrom(value)
     setPage(1)
   }, [])
 
@@ -73,31 +101,63 @@ export default function RecentMailsPage() {
           <span className="text-sm text-base-content/40">{total}</span>
         </div>
 
-        {/* Search */}
-        <form onSubmit={handleSearch} className="mb-4">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30" />
-            <input
-              type="text"
-              className="input-modern input-sm w-full pl-10 pr-20"
-              placeholder={t('recentMails.searchPlaceholder')}
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-            />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              {searchInput && (
-                <button type="button" className="btn btn-xs btn-ghost btn-circle" onClick={handleClearSearch}>
-                  <X size={14} />
-                </button>
-              )}
-              <button type="submit" className="btn btn-xs btn-primary">{t('recentMails.search')}</button>
-            </div>
+        {/* Filters */}
+        <div className="flex flex-wrap items-end gap-2 mb-4">
+          {/* Account (short_id) dropdown */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-base-content/50 font-medium">{t('recentMails.filterAccount')}</label>
+            <select
+              className="select select-sm select-bordered min-w-[140px]"
+              value={filterShortId}
+              onChange={e => handleShortIdChange(e.target.value)}
+            >
+              <option value="">{t('recentMails.filterAll')}</option>
+              {recipients.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
           </div>
-        </form>
+
+          {/* Sender (from) dropdown */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-base-content/50 font-medium">{t('recentMails.filterSender')}</label>
+            <select
+              className="select select-sm select-bordered min-w-[180px]"
+              value={filterFrom}
+              onChange={e => handleFromChange(e.target.value)}
+            >
+              <option value="">{t('recentMails.filterAll')}</option>
+              {senders.map(s => <option key={s} value={s}>{formatSender(s)}</option>)}
+            </select>
+          </div>
+
+          {/* Subject search */}
+          <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-base-content/50 font-medium">{t('recentMails.filterSubject')}</label>
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30" />
+                <input
+                  type="text"
+                  className="input-modern input-sm w-full pl-10 pr-16"
+                  placeholder={t('recentMails.filterSearch')}
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  {searchInput && (
+                    <button type="button" className="btn btn-xs btn-ghost btn-circle" onClick={handleClearSearch}>
+                      <X size={14} />
+                    </button>
+                  )}
+                  <button type="submit" className="btn btn-xs btn-primary">{t('recentMails.search')}</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
 
         <div className="flex gap-4 min-h-0">
           {/* List */}
-          <div className={`${selectedMail ? 'hidden lg:block lg:w-2/5' : 'w-full'} card-modern flex flex-col max-h-[calc(100vh-180px)]`}>
+          <div className={`${selectedMail ? 'hidden lg:block lg:w-2/5' : 'w-full'} card-modern flex flex-col max-h-[calc(100vh-220px)]`}>
             <div className="flex-1 overflow-y-auto min-h-0">
               {loading && emails.length === 0 ? (
                 <div className="flex items-center justify-center py-16">
@@ -106,7 +166,7 @@ export default function RecentMailsPage() {
               ) : emails.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <Mail size={48} className="text-base-content/20 mb-2 opacity-30" />
-                  <p className="text-sm text-base-content/30">{query ? t('recentMails.noResults') : t('recentMails.empty')}</p>
+                  <p className="text-sm text-base-content/30">{(filterShortId || filterFrom || filterQuery) ? t('recentMails.noResults') : t('recentMails.empty')}</p>
                 </div>
               ) : (
                 <div className="divide-y divide-base-300/40">

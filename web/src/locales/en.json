@@ -74,7 +74,12 @@
     "noResults": "No emails match your search.",
     "open": "Open",
     "search": "Search",
-    "searchPlaceholder": "Search by subject or sender..."
+    "searchPlaceholder": "Search by subject or sender...",
+    "filterAccount": "Account",
+    "filterSender": "Sender",
+    "filterAll": "All",
+    "filterSubject": "Subject",
+    "filterSearch": "Search subject..."
   },
   "mailboxTabs": {
     "add": "Add Mailbox",

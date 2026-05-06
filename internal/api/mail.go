@@ -68,7 +68,7 @@ func (rt *Router) handleRecentMails(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleAllMails responds to GET /api/mails/all with paginated mails across all mailboxes.
-// Supports ?page=1&pageSize=20&q=keyword for pagination and search.
+// Supports ?page=1&pageSize=20&short_id=xxx&from=xxx&q=keyword for filtering.
 func (rt *Router) handleAllMails(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
@@ -79,9 +79,11 @@ func (rt *Router) handleAllMails(w http.ResponseWriter, r *http.Request) {
 
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	pageSize, _ := strconv.Atoi(r.URL.Query().Get("pageSize"))
+	shortID := r.URL.Query().Get("short_id")
+	from := r.URL.Query().Get("from")
 	query := r.URL.Query().Get("q")
 
-	mails, total, err := rt.mailStore.ListAll(page, pageSize, query)
+	mails, total, err := rt.mailStore.ListAll(page, pageSize, shortID, from, query)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, i18n.T(lang, "list_mails_failed"))
 		return
@@ -96,5 +98,38 @@ func (rt *Router) handleAllMails(w http.ResponseWriter, r *http.Request) {
 		"total":    total,
 		"page":     page,
 		"pageSize": pageSize,
+	})
+}
+
+// handleMailFilters responds to GET /api/mails/filters with distinct senders and recipients.
+func (rt *Router) handleMailFilters(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
+		return
+	}
+
+	lang := i18n.LangFromRequest(r)
+
+	senders, err := rt.mailStore.ListDistinctSenders(100)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, i18n.T(lang, "list_mails_failed"))
+		return
+	}
+	recipients, err := rt.mailStore.ListDistinctRecipients(100)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, i18n.T(lang, "list_mails_failed"))
+		return
+	}
+
+	if senders == nil {
+		senders = []string{}
+	}
+	if recipients == nil {
+		recipients = []string{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"senders":    senders,
+		"recipients": recipients,
 	})
 }

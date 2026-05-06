@@ -74,7 +74,12 @@
     "noResults": "没有匹配的邮件。",
     "open": "查看",
     "search": "搜索",
-    "searchPlaceholder": "搜索主题或发件人..."
+    "searchPlaceholder": "搜索主题或发件人...",
+    "filterAccount": "账号",
+    "filterSender": "发件人",
+    "filterAll": "全部",
+    "filterSubject": "主题",
+    "filterSearch": "搜索主题..."
   },
   "mailboxTabs": {
     "add": "添加邮箱",
