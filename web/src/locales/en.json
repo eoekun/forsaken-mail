@@ -69,8 +69,12 @@
   },
   "recentMails": {
     "title": "Recent Mails",
+    "pageTitle": "All Mails",
     "empty": "No recent emails.",
-    "open": "Open"
+    "noResults": "No emails match your search.",
+    "open": "Open",
+    "search": "Search",
+    "searchPlaceholder": "Search by subject or sender..."
   },
   "mailboxTabs": {
     "add": "Add Mailbox",

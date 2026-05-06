@@ -106,7 +106,7 @@ func (s *session) Rcpt(to string, opts *goSmtp.RcptOptions) error {
 		return fmt.Errorf("550 Mail service not configured")
 	}
 	_, domain := extractAddress(to)
-	if domain != mailHost {
+	if !mail.IsDomainAllowed(domain, mailHost) {
 		slog.Warn("rejected outbound relay attempt", "from", s.from, "to", to, "ip", s.ip)
 		return fmt.Errorf("550 Relaying to %s is not allowed", domain)
 	}

@@ -59,14 +59,14 @@ func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBod
 			slog.Warn("invalid recipient address", "addr", addr)
 			continue
 		}
-		if domain != mailHost {
+		if !IsDomainAllowed(domain, mailHost) {
 			slog.Warn("recipient domain does not match mail_host", "addr", addr, "mail_host", mailHost)
 			continue
 		}
 
 		// Drop mail to blacklisted short IDs.
 		blacklist, _ := r.settings.Get("keyword_blacklist")
-		if isBlacklisted(shortID, blacklist) {
+		if IsBlacklisted(shortID, blacklist) {
 			slog.Warn("mail dropped by keyword blacklist", "short_id", shortID, "from", from)
 			_ = r.auditStore.Record("MAIL_BLACKLISTED", addr, `{"reason":"keyword_blacklist"}`, senderIP)
 			continue

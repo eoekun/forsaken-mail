@@ -42,6 +42,7 @@ export default function MainPage() {
           tabs={tabs}
           activeShortId={activeShortId}
           host={config?.host}
+          hosts={config?.hosts}
           onSelect={setActiveShortId}
           onClose={unsubscribeFromShortId}
           onAdd={requestNewShortId}

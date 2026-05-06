@@ -6,16 +6,18 @@ import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 
 const SHORTID_REGEX = /^[a-z0-9._\-+]{1,64}$/
 
-export default function MailboxTabs({ tabs, activeShortId, host, onSelect, onClose, onAdd, onSetShortId }) {
+export default function MailboxTabs({ tabs, activeShortId, host, hosts, onSelect, onClose, onAdd, onSetShortId }) {
   const { t } = useTranslation()
   const toast = useToast()
   const { copiedId, copy } = useCopyToClipboard()
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  const [selectedDomain, setSelectedDomain] = useState(host)
   const inputRef = useRef(null)
 
-  const address = activeShortId ? `${activeShortId}@${host}` : ''
+  const activeHost = hosts && hosts.length > 1 ? selectedDomain : host
+  const address = activeShortId ? `${activeShortId}@${activeHost}` : ''
   const copied = copiedId === address
 
   const handleCopy = useCallback(async () => {
@@ -65,7 +67,17 @@ export default function MailboxTabs({ tabs, activeShortId, host, onSelect, onClo
               placeholder={t('mailbox.customShortId')}
               pattern="[a-z0-9._\-+]{1,64}"
             />
-            <span className="text-xs text-base-content/60 font-mono shrink-0">@{host}</span>
+            {hosts && hosts.length > 1 ? (
+              <select
+                className="select select-xs select-ghost font-mono text-xs shrink-0"
+                value={selectedDomain}
+                onChange={e => setSelectedDomain(e.target.value)}
+              >
+                {hosts.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            ) : (
+              <span className="text-xs text-base-content/60 font-mono shrink-0">@{activeHost}</span>
+            )}
             <button type="submit" className="btn btn-xs btn-primary shrink-0">{t('mailbox.set')}</button>
             <button type="button" className="btn btn-xs btn-ghost shrink-0" onClick={() => setEditing(false)}>{t('mailbox.cancel')}</button>
           </form>

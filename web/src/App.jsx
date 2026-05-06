@@ -6,6 +6,7 @@ import { ToastProvider } from './components/Toast'
 import ErrorBoundary from './components/ErrorBoundary'
 import LoginPage from './pages/LoginPage'
 import MainPage from './pages/MainPage'
+import RecentMailsPage from './pages/RecentMailsPage'
 import AdminPage from './pages/AdminPage'
 import AuditLogTab from './components/AuditLogTab'
 import SettingsTab from './components/SettingsTab'
@@ -59,7 +60,8 @@ export default function App() {
   useEffect(() => {
     apiGet('/api/config')
       .then(data => {
-        setConfig({ host: data.host, siteTitle: data.site_title, authMode: data.auth_mode })
+        const hosts = (data.hosts || [data.host]).map(d => d.trim()).filter(Boolean)
+        setConfig({ host: data.host, hosts, siteTitle: data.site_title, authMode: data.auth_mode })
         if (data.email) {
           setUser({ email: data.email })
         }
@@ -89,6 +91,7 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/" element={isAuthenticated ? <MainPage /> : <Navigate to="/login" />} />
+                <Route path="/recent" element={isAuthenticated ? <RecentMailsPage /> : <Navigate to="/login" />} />
                 <Route path="/admin" element={isAuthenticated ? <AdminPage /> : <Navigate to="/login" />}>
                   <Route index element={<Navigate to="audit" replace />} />
                   <Route path="audit" element={<AuditLogTab />} />

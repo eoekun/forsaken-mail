@@ -7,6 +7,7 @@ import (
 
 	"forsaken-mail/internal/auth"
 	"forsaken-mail/internal/i18n"
+	"forsaken-mail/internal/mail"
 )
 
 // handleConfig responds to GET /api/config with site configuration.
@@ -19,8 +20,14 @@ func (rt *Router) handleConfig(w http.ResponseWriter, r *http.Request) {
 	host, _ := rt.settings.Get("mail_host")
 	siteTitle, _ := rt.settings.Get("site_title")
 
+	hosts := mail.ParseDomains(host)
+	if len(hosts) == 0 {
+		hosts = []string{host}
+	}
+
 	resp := map[string]any{
-		"host":       host,
+		"host":       hosts[0],
+		"hosts":      hosts,
 		"site_title": siteTitle,
 		"auth_mode":  rt.cfg.AuthMode,
 	}

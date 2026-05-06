@@ -240,6 +240,58 @@ func (s *Store) CountByShortID(shortID string) (int, error) {
 	return count, err
 }
 
+const mailListColumns = `id, short_id, from_addr, to_addr, subject, '' as text_body, '' as html_body, raw_size, is_read, extracted_codes, extracted_links, created_at`
+
+// ListAll returns paginated mails across all mailboxes, with optional search
+// on subject and from_addr. Returns (mails, total, error).
+func (s *Store) ListAll(page, pageSize int, query string) ([]Mail, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
+
+	var total int
+	var countArgs []any
+	countSQL := `SELECT COUNT(*) FROM mails`
+	if query != "" {
+		q := "%" + query + "%"
+		countSQL += ` WHERE subject LIKE ? OR from_addr LIKE ?`
+		countArgs = append(countArgs, q, q)
+	}
+	if err := s.db.QueryRow(countSQL, countArgs...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	var rows_args []any
+	rowsSQL := `SELECT ` + mailListColumns + ` FROM mails`
+	if query != "" {
+		q := "%" + query + "%"
+		rowsSQL += ` WHERE subject LIKE ? OR from_addr LIKE ?`
+		rows_args = append(rows_args, q, q)
+	}
+	rowsSQL += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	rows_args = append(rows_args, pageSize, offset)
+
+	rows, err := s.db.Query(rowsSQL, rows_args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var mails []Mail
+	for rows.Next() {
+		m, err := scanMail(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		mails = append(mails, *m)
+	}
+	return mails, total, rows.Err()
+}
+
 // Reextract re-runs code and link extraction on all mails for the given short ID
 // and updates the database. Returns the number of mails updated.
 func (s *Store) Reextract(shortID string) (int, error) {

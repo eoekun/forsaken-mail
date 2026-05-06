@@ -69,8 +69,12 @@
   },
   "recentMails": {
     "title": "最近邮件",
+    "pageTitle": "全部邮件",
     "empty": "暂无最近邮件。",
-    "open": "查看"
+    "noResults": "没有匹配的邮件。",
+    "open": "查看",
+    "search": "搜索",
+    "searchPlaceholder": "搜索主题或发件人..."
   },
   "mailboxTabs": {
     "add": "添加邮箱",

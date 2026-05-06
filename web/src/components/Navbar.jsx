@@ -123,6 +123,10 @@ export default function Navbar({ recentMails, onOpenRecentMail }) {
 
             <div className="w-px h-5 bg-base-300/60 mx-1"></div>
 
+            <Link to="/recent" className="btn btn-ghost btn-sm gap-1" title={t('recentMails.pageTitle')}>
+              <Clock size={16} />
+              <span>{t('recentMails.pageTitle')}</span>
+            </Link>
             <Link to="/admin" className="btn btn-ghost btn-sm gap-1" title={t('navbar.admin')}>
               <Shield size={16} />
               <span>{t('navbar.admin')}</span>
@@ -191,6 +195,13 @@ export default function Navbar({ recentMails, onOpenRecentMail }) {
                 </button>
               </li>
               <div className="divider my-0"></div>
+              {/* Recent */}
+              <li>
+                <Link to="/recent">
+                  <Clock size={14} />
+                  {t('recentMails.pageTitle')}
+                </Link>
+              </li>
               {/* Admin */}
               <li>
                 <Link to="/admin">
