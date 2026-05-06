@@ -72,6 +72,30 @@ func (s *Store) Init() error {
 	return nil
 }
 
+// scanMail scans a single row into a Mail struct. The scanner interface is
+// satisfied by both *sql.Row and *sql.Rows.
+func scanMail(scanner interface{ Scan(dest ...any) error }) (*Mail, error) {
+	var m Mail
+	var isRead int
+	var codesJSON, linksJSON string
+	if err := scanner.Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject,
+		&m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &codesJSON, &linksJSON, &m.CreatedAt); err != nil {
+		return nil, err
+	}
+	m.IsRead = isRead != 0
+	json.Unmarshal([]byte(codesJSON), &m.ExtractedCodes)
+	json.Unmarshal([]byte(linksJSON), &m.ExtractedLinks)
+	if m.ExtractedCodes == nil {
+		m.ExtractedCodes = []string{}
+	}
+	if m.ExtractedLinks == nil {
+		m.ExtractedLinks = []string{}
+	}
+	return &m, nil
+}
+
+const mailSelectColumns = `id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, extracted_codes, extracted_links, created_at`
+
 // Save inserts a mail record into the database and sets mail.ID to the new row ID.
 // It extracts verification codes and links before saving.
 func (s *Store) Save(mail *Mail) error {
@@ -98,11 +122,7 @@ func (s *Store) Save(mail *Mail) error {
 // ListByShortID returns up to limit mails for the given short ID, ordered by created_at DESC.
 func (s *Store) ListByShortID(shortID string, limit int) ([]Mail, error) {
 	rows, err := s.db.Query(
-		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, extracted_codes, extracted_links, created_at
-		 FROM mails
-		 WHERE short_id = ?
-		 ORDER BY created_at DESC
-		 LIMIT ?`,
+		`SELECT `+mailSelectColumns+` FROM mails WHERE short_id = ? ORDER BY created_at DESC LIMIT ?`,
 		shortID, limit,
 	)
 	if err != nil {
@@ -112,22 +132,11 @@ func (s *Store) ListByShortID(shortID string, limit int) ([]Mail, error) {
 
 	var mails []Mail
 	for rows.Next() {
-		var m Mail
-		var isRead int
-		var codesJSON, linksJSON string
-		if err := rows.Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &codesJSON, &linksJSON, &m.CreatedAt); err != nil {
+		m, err := scanMail(rows)
+		if err != nil {
 			return nil, err
 		}
-		m.IsRead = isRead != 0
-		json.Unmarshal([]byte(codesJSON), &m.ExtractedCodes)
-		json.Unmarshal([]byte(linksJSON), &m.ExtractedLinks)
-		if m.ExtractedCodes == nil {
-			m.ExtractedCodes = []string{}
-		}
-		if m.ExtractedLinks == nil {
-			m.ExtractedLinks = []string{}
-		}
-		mails = append(mails, m)
+		mails = append(mails, *m)
 	}
 	return mails, rows.Err()
 }
@@ -197,35 +206,15 @@ func (s *Store) DeleteByID(id int64) error {
 
 // GetByID returns a single mail by its ID.
 func (s *Store) GetByID(id int64) (*Mail, error) {
-	var m Mail
-	var isRead int
-	var codesJSON, linksJSON string
-	err := s.db.QueryRow(
-		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, extracted_codes, extracted_links, created_at
-		 FROM mails WHERE id = ?`, id,
-	).Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &codesJSON, &linksJSON, &m.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-	m.IsRead = isRead != 0
-	json.Unmarshal([]byte(codesJSON), &m.ExtractedCodes)
-	json.Unmarshal([]byte(linksJSON), &m.ExtractedLinks)
-	if m.ExtractedCodes == nil {
-		m.ExtractedCodes = []string{}
-	}
-	if m.ExtractedLinks == nil {
-		m.ExtractedLinks = []string{}
-	}
-	return &m, nil
+	return scanMail(s.db.QueryRow(
+		`SELECT `+mailSelectColumns+` FROM mails WHERE id = ?`, id,
+	))
 }
 
 // ListRecent returns the most recent mails across all short IDs.
 func (s *Store) ListRecent(limit int) ([]Mail, error) {
 	rows, err := s.db.Query(
-		`SELECT id, short_id, from_addr, to_addr, subject, text_body, html_body, raw_size, is_read, extracted_codes, extracted_links, created_at
-		 FROM mails
-		 ORDER BY created_at DESC
-		 LIMIT ?`,
+		`SELECT `+mailSelectColumns+` FROM mails ORDER BY created_at DESC LIMIT ?`,
 		limit,
 	)
 	if err != nil {
@@ -235,22 +224,11 @@ func (s *Store) ListRecent(limit int) ([]Mail, error) {
 
 	var mails []Mail
 	for rows.Next() {
-		var m Mail
-		var isRead int
-		var codesJSON, linksJSON string
-		if err := rows.Scan(&m.ID, &m.ShortID, &m.FromAddr, &m.ToAddr, &m.Subject, &m.TextBody, &m.HTMLBody, &m.RawSize, &isRead, &codesJSON, &linksJSON, &m.CreatedAt); err != nil {
+		m, err := scanMail(rows)
+		if err != nil {
 			return nil, err
 		}
-		m.IsRead = isRead != 0
-		json.Unmarshal([]byte(codesJSON), &m.ExtractedCodes)
-		json.Unmarshal([]byte(linksJSON), &m.ExtractedLinks)
-		if m.ExtractedCodes == nil {
-			m.ExtractedCodes = []string{}
-		}
-		if m.ExtractedLinks == nil {
-			m.ExtractedLinks = []string{}
-		}
-		mails = append(mails, m)
+		mails = append(mails, *m)
 	}
 	return mails, rows.Err()
 }

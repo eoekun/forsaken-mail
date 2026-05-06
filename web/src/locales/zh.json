@@ -1,6 +1,7 @@
 {
   "common": {
-    "back": "返回"
+    "back": "返回",
+    "loading": "加载中..."
   },
   "navbar": {
     "admin": "管理",

@@ -3,6 +3,8 @@ package i18n
 import (
 	"fmt"
 	"net/http"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -33,7 +35,7 @@ var translations = map[string]map[string]string{
 		"invalid_short_id":            "invalid short id",
 		"shortid_in_blacklist":        "short id in blacklist",
 		"unknown_message_type":        "unknown message type",
-		"smtp_connect_failed":         "Failed to connect to QQ SMTP: %v",
+		"smtp_connect_failed":         "Failed to connect to SMTP: %v",
 		"tls_handshake_failed":        "TLS handshake failed: %v",
 		"smtp_client_error":           "SMTP client error: %v",
 		"smtp_auth_failed":            "SMTP auth failed (check email and auth code): %v",
@@ -42,7 +44,7 @@ var translations = map[string]map[string]string{
 		"data_command_failed":         "DATA command failed: %v",
 		"write_message_failed":        "Failed to write message: %v",
 		"close_message_failed":        "Failed to close message: %v",
-		"test_email_sent":             "Test email sent from %s to %s via QQ SMTP",
+		"test_email_sent":             "Test email sent from %s to %s",
 		"webhook_token_empty":         "Webhook token/url is empty or invalid.",
 		"webhook_parse_failed":        "Failed to parse DingTalk response.",
 		"webhook_request_failed":      "Webhook request failed: %v",
@@ -76,7 +78,7 @@ var translations = map[string]map[string]string{
 		"invalid_short_id":            "无效的短 ID",
 		"shortid_in_blacklist":        "短 ID 包含黑名单关键字",
 		"unknown_message_type":        "未知的消息类型",
-		"smtp_connect_failed":         "连接 QQ SMTP 失败：%v",
+		"smtp_connect_failed":         "连接 SMTP 失败：%v",
 		"tls_handshake_failed":        "TLS 握手失败：%v",
 		"smtp_client_error":           "SMTP 客户端错误：%v",
 		"smtp_auth_failed":            "SMTP 认证失败（请检查邮箱和授权码）：%v",
@@ -85,7 +87,7 @@ var translations = map[string]map[string]string{
 		"data_command_failed":         "DATA 命令失败：%v",
 		"write_message_failed":        "写入邮件失败：%v",
 		"close_message_failed":        "关闭邮件失败：%v",
-		"test_email_sent":             "测试邮件已通过 QQ SMTP 从 %s 发送至 %s",
+		"test_email_sent":             "测试邮件已从 %s 发送至 %s",
 		"webhook_token_empty":         "Webhook Token/URL 为空或无效。",
 		"webhook_parse_failed":        "解析钉钉响应失败。",
 		"webhook_request_failed":      "Webhook 请求失败：%v",
@@ -109,23 +111,49 @@ func NormalizeLang(lang string) string {
 	return "en"
 }
 
-// LangFromRequest extracts the preferred language from the Accept-Language header.
+type langQuality struct {
+	lang string
+	q    float64
+}
+
+// LangFromRequest extracts the preferred language from the Accept-Language
+// header, respecting quality values (e.g. "en;q=0.1, zh;q=0.9" prefers "zh").
 func LangFromRequest(r *http.Request) string {
 	accept := r.Header.Get("Accept-Language")
 	if accept == "" {
 		return "en"
 	}
-	// Take the first language tag (before comma or semicolon).
-	for _, part := range strings.FieldsFunc(accept, func(r rune) bool {
-		return r == ',' || r == ';'
-	}) {
-		normalized := NormalizeLang(strings.TrimSpace(part))
-		if normalized != "en" {
-			return normalized
+
+	var langs []langQuality
+	for _, part := range strings.Split(accept, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		lang := part
+		q := 1.0
+		if idx := strings.Index(part, ";"); idx >= 0 {
+			lang = strings.TrimSpace(part[:idx])
+			qStr := strings.TrimSpace(part[idx+1:])
+			if strings.HasPrefix(qStr, "q=") {
+				if v, err := strconv.ParseFloat(qStr[2:], 64); err == nil {
+					q = v
+				}
+			}
+		}
+		normalized := NormalizeLang(lang)
+		if normalized != "" {
+			langs = append(langs, langQuality{normalized, q})
 		}
 	}
-	// If the first part normalized to "en", still return it.
-	return NormalizeLang(accept)
+
+	// Sort by quality descending.
+	sort.Slice(langs, func(i, j int) bool { return langs[i].q > langs[j].q })
+
+	if len(langs) > 0 {
+		return langs[0].lang
+	}
+	return "en"
 }
 
 // T returns the translated string for the given key and language.

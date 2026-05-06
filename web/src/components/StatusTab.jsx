@@ -23,7 +23,7 @@ function getStatusColor(key, value) {
   return null
 }
 
-function StatusCard({ label, value, t }) {
+function StatusCard({ label, value }) {
   const statusColor = getStatusColor(label, value)
   const borderColor = statusColor === 'success'
     ? 'border-l-success'
@@ -94,7 +94,7 @@ export default function StatusTab() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {Object.entries(status).map(([key, value]) => (
-          <StatusCard key={key} label={key} value={value} t={t} />
+          <StatusCard key={key} label={key} value={value} />
         ))}
       </div>
     </div>

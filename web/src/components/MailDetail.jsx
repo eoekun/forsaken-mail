@@ -1,15 +1,15 @@
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import DOMPurify from 'dompurify'
 import { useTranslation } from 'react-i18next'
 import { useToast } from './Toast'
-import { Mail, FileText, Copy, Check, ExternalLink, ArrowLeft, KeyRound } from 'lucide-react'
+import { Mail, Copy, Check, ExternalLink, ArrowLeft, KeyRound } from 'lucide-react'
 import { apiPut } from '../lib/api'
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 
 export default function MailDetail({ mail, onMailRead, onBack }) {
   const { t } = useTranslation()
   const toast = useToast()
-  const [copiedCode, setCopiedCode] = useState(null)
-  const copiedTimerRef = useRef(null)
+  const { copiedId: copiedCode, copy } = useCopyToClipboard()
 
   useEffect(() => {
     if (mail?.id && !mail.is_read) {
@@ -18,17 +18,9 @@ export default function MailDetail({ mail, onMailRead, onBack }) {
     }
   }, [mail?.id])
 
-  useEffect(() => {
-    return () => clearTimeout(copiedTimerRef.current)
-  }, [])
-
   const copyCode = (code) => {
-    navigator.clipboard.writeText(code).then(() => {
-      setCopiedCode(code)
-      toast.success(t('mailDetail.codeCopied'))
-      clearTimeout(copiedTimerRef.current)
-      copiedTimerRef.current = setTimeout(() => setCopiedCode(null), 2000)
-    })
+    copy(code, code)
+    toast.success(t('mailDetail.codeCopied'))
   }
 
   const htmlContent = mail?.html || mail?.text_body || ''

@@ -1,39 +1,19 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Inbox, KeyRound, Search, Copy, Check } from 'lucide-react'
-
-function formatMailTime(dateStr, t) {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diffMs = now - then
-  const diffMin = Math.floor(diffMs / 60000)
-  const diffHour = Math.floor(diffMs / 3600000)
-
-  if (diffMin < 1) return t('mailList.timeJustNow')
-  if (diffHour < 1) return t('mailList.timeMinutesAgo', { count: diffMin })
-  if (diffHour < 24) return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  return new Date(dateStr).toLocaleString([], { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-}
+import { Inbox, KeyRound, Search, Check } from 'lucide-react'
+import { formatMailTime } from '../lib/formatTime'
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 
 export default function MailList({ mails, selectedMail, onSelect }) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
-  const [copiedId, setCopiedId] = useState(null)
-  const copiedTimerRef = useRef(null)
-
-  useEffect(() => {
-    return () => clearTimeout(copiedTimerRef.current)
-  }, [])
+  const { copiedId, copy } = useCopyToClipboard()
 
   const handleCopyCode = (e, mail) => {
     e.stopPropagation()
     const code = mail.extracted_codes?.[0]
     if (!code) return
-    navigator.clipboard.writeText(code).then(() => {
-      setCopiedId(mail.id)
-      clearTimeout(copiedTimerRef.current)
-      copiedTimerRef.current = setTimeout(() => setCopiedId(null), 2000)
-    })
+    copy(code, mail.id)
   }
 
   const filteredMails = useMemo(() => {

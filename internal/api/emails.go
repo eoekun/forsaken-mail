@@ -7,7 +7,24 @@ import (
 	"strings"
 
 	"forsaken-mail/internal/i18n"
+	"forsaken-mail/internal/mail"
 )
+
+// toEmailResponse converts a mail.Mail to an emailResponse.
+func toEmailResponse(m *mail.Mail) emailResponse {
+	return emailResponse{
+		ID:             m.ID,
+		From:           m.FromAddr,
+		To:             m.ToAddr,
+		Subject:        m.Subject,
+		TextBody:       m.TextBody,
+		HTMLBody:       m.HTMLBody,
+		IsRead:         m.IsRead,
+		ExtractedCodes: m.ExtractedCodes,
+		ExtractedLinks: m.ExtractedLinks,
+		CreatedAt:      m.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+	}
+}
 
 // emailResponse is the JSON shape returned by the email API.
 type emailResponse struct {
@@ -98,18 +115,7 @@ func (rt *Router) handleListEmails(w http.ResponseWriter, r *http.Request, short
 		ShortID: shortID,
 	}
 	for _, m := range mails {
-		resp.Emails = append(resp.Emails, emailResponse{
-			ID:             m.ID,
-			From:           m.FromAddr,
-			To:             m.ToAddr,
-			Subject:        m.Subject,
-			TextBody:       m.TextBody,
-			HTMLBody:       m.HTMLBody,
-			IsRead:         m.IsRead,
-			ExtractedCodes: m.ExtractedCodes,
-			ExtractedLinks: m.ExtractedLinks,
-			CreatedAt:      m.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
-		})
+		resp.Emails = append(resp.Emails, toEmailResponse(&m))
 	}
 
 	writeJSON(w, http.StatusOK, resp)
@@ -129,18 +135,7 @@ func (rt *Router) handleGetEmail(w http.ResponseWriter, r *http.Request, id int6
 		return
 	}
 
-	writeJSON(w, http.StatusOK, emailResponse{
-		ID:             m.ID,
-		From:           m.FromAddr,
-		To:             m.ToAddr,
-		Subject:        m.Subject,
-		TextBody:       m.TextBody,
-		HTMLBody:       m.HTMLBody,
-		IsRead:         m.IsRead,
-		ExtractedCodes: m.ExtractedCodes,
-		ExtractedLinks: m.ExtractedLinks,
-		CreatedAt:      m.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
-	})
+	writeJSON(w, http.StatusOK, toEmailResponse(m))
 }
 
 // handleDeleteAllEmails deletes all emails for a short ID.

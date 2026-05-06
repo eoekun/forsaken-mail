@@ -17,6 +17,14 @@ type testEmailRequest struct {
 	ShortID     string `json:"short_id"`
 }
 
+// writeSMTPError writes a standardized SMTP error response.
+func writeSMTPError(w http.ResponseWriter, lang, i18nKey string, err error) {
+	writeJSON(w, http.StatusBadGateway, map[string]any{
+		"ok":      false,
+		"message": i18n.Tfmt(lang, i18nKey, err),
+	})
+}
+
 func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
@@ -42,6 +50,16 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get configurable SMTP host (default: smtp.qq.com)
+	smtpHost, _ := rt.settings.Get("test_smtp_host")
+	if smtpHost == "" {
+		smtpHost = "smtp.qq.com"
+	}
+	smtpPort, _ := rt.settings.Get("test_smtp_port")
+	if smtpPort == "" {
+		smtpPort = "465"
+	}
+
 	shortID := req.ShortID
 	if shortID == "" {
 		shortID = "test"
@@ -49,90 +67,62 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	recipient := shortID + "@" + mailHost
 
 	subject := fmt.Sprintf("SMTP Test - %s", time.Now().Format("2006-01-02 15:04:05"))
-	body := fmt.Sprintf("This is a test email sent via QQ SMTP to forsaken-mail.\n\nSender: %s\nRecipient: %s\nTime: %s\n", req.SenderEmail, recipient, time.Now().Format(time.RFC3339))
+	body := fmt.Sprintf("This is a test email sent via SMTP to forsaken-mail.\n\nSender: %s\nRecipient: %s\nTime: %s\n", req.SenderEmail, recipient, time.Now().Format(time.RFC3339))
 
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s",
 		req.SenderEmail, recipient, subject, body)
 
-	// Connect to QQ SMTP via SSL (port 465)
-	addr := "smtp.qq.com:465"
+	addr := net.JoinHostPort(smtpHost, smtpPort)
 	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
 	if err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]any{
-			"ok":      false,
-			"message": i18n.Tfmt(lang, "smtp_connect_failed", err),
-		})
+		writeSMTPError(w, lang, "smtp_connect_failed", err)
 		return
 	}
 
-	tlsConn := tls.Client(conn, &tls.Config{ServerName: "smtp.qq.com"})
+	tlsConn := tls.Client(conn, &tls.Config{ServerName: smtpHost})
 	if err := tlsConn.Handshake(); err != nil {
 		conn.Close()
-		writeJSON(w, http.StatusBadGateway, map[string]any{
-			"ok":      false,
-			"message": i18n.Tfmt(lang, "tls_handshake_failed", err),
-		})
+		writeSMTPError(w, lang, "tls_handshake_failed", err)
 		return
 	}
 
-	client, err := smtp.NewClient(tlsConn, "smtp.qq.com")
+	client, err := smtp.NewClient(tlsConn, smtpHost)
 	if err != nil {
 		tlsConn.Close()
-		writeJSON(w, http.StatusBadGateway, map[string]any{
-			"ok":      false,
-			"message": i18n.Tfmt(lang, "smtp_client_error", err),
-		})
+		writeSMTPError(w, lang, "smtp_client_error", err)
 		return
 	}
 	defer client.Close()
 
-	auth := smtp.PlainAuth("", req.SenderEmail, req.AuthCode, "smtp.qq.com")
+	auth := smtp.PlainAuth("", req.SenderEmail, req.AuthCode, smtpHost)
 	if err := client.Auth(auth); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]any{
-			"ok":      false,
-			"message": i18n.Tfmt(lang, "smtp_auth_failed", err),
-		})
+		writeSMTPError(w, lang, "smtp_auth_failed", err)
 		return
 	}
 
 	if err := client.Mail(req.SenderEmail); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]any{
-			"ok":      false,
-			"message": i18n.Tfmt(lang, "mail_from_failed", err),
-		})
+		writeSMTPError(w, lang, "mail_from_failed", err)
 		return
 	}
 
 	if err := client.Rcpt(recipient); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]any{
-			"ok":      false,
-			"message": i18n.Tfmt(lang, "rcpt_to_failed", err),
-		})
+		writeSMTPError(w, lang, "rcpt_to_failed", err)
 		return
 	}
 
 	wc, err := client.Data()
 	if err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]any{
-			"ok":      false,
-			"message": i18n.Tfmt(lang, "data_command_failed", err),
-		})
+		writeSMTPError(w, lang, "data_command_failed", err)
 		return
 	}
 
 	if _, err := wc.Write([]byte(msg)); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]any{
-			"ok":      false,
-			"message": i18n.Tfmt(lang, "write_message_failed", err),
-		})
+		writeSMTPError(w, lang, "write_message_failed", err)
 		return
 	}
 
 	if err := wc.Close(); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]any{
-			"ok":      false,
-			"message": i18n.Tfmt(lang, "close_message_failed", err),
-		})
+		writeSMTPError(w, lang, "close_message_failed", err)
 		return
 	}
 

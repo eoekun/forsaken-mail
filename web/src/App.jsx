@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { apiGet } from './lib/api'
 import { ToastProvider } from './components/Toast'
+import ErrorBoundary from './components/ErrorBoundary'
 import LoginPage from './pages/LoginPage'
 import MainPage from './pages/MainPage'
 import AdminPage from './pages/AdminPage'
@@ -21,6 +23,18 @@ function getInitialTheme() {
   const stored = localStorage.getItem('theme')
   if (stored === 'dark' || stored === 'light') return stored
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+function LoadingScreen() {
+  const { t } = useTranslation()
+  return (
+    <div className="flex items-center justify-center h-screen bg-base-200">
+      <div className="flex flex-col items-center gap-3">
+        <span className="loading loading-spinner text-primary"></span>
+        <span className="text-sm text-base-content/50">{t('common.loading')}</span>
+      </div>
+    </div>
+  )
 }
 
 export default function App() {
@@ -58,14 +72,7 @@ export default function App() {
   }, [config])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-base-200">
-        <div className="flex flex-col items-center gap-3">
-          <span className="loading loading-spinner text-primary"></span>
-          <span className="text-sm text-base-content/50">Loading...</span>
-        </div>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   const isAuthenticated = !!user
@@ -75,12 +82,14 @@ export default function App() {
       <AuthContext.Provider value={{ config, user, isAuthenticated }}>
         <ToastProvider>
           <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
-              <Route path="/" element={isAuthenticated ? <MainPage /> : <Navigate to="/login" />} />
-              <Route path="/admin" element={isAuthenticated ? <AdminPage /> : <Navigate to="/login" />} />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
+                <Route path="/" element={isAuthenticated ? <MainPage /> : <Navigate to="/login" />} />
+                <Route path="/admin" element={isAuthenticated ? <AdminPage /> : <Navigate to="/login" />} />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </ErrorBoundary>
           </BrowserRouter>
         </ToastProvider>
       </AuthContext.Provider>

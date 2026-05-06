@@ -1,6 +1,7 @@
 {
   "common": {
-    "back": "Back"
+    "back": "Back",
+    "loading": "Loading..."
   },
   "navbar": {
     "admin": "Admin",

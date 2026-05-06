@@ -1,5 +1,10 @@
 import i18n from '../i18n'
 
+function getCsrfToken() {
+  const match = document.cookie.match(/csrf_token=([^;]+)/)
+  return match ? match[1] : ''
+}
+
 export async function apiFetch(url, options = {}) {
   const headers = new Headers(options.headers)
   headers.set('Accept-Language', i18n.language)
@@ -30,7 +35,10 @@ export async function apiGet(url) {
 export async function apiPost(url, data) {
   return apiFetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrfToken(),
+    },
     body: JSON.stringify(data),
   })
 }
@@ -38,7 +46,10 @@ export async function apiPost(url, data) {
 export async function apiPut(url, data) {
   return apiFetch(url, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrfToken(),
+    },
     body: JSON.stringify(data),
   })
 }
@@ -46,5 +57,8 @@ export async function apiPut(url, data) {
 export async function apiDelete(url) {
   return apiFetch(url, {
     method: 'DELETE',
+    headers: {
+      'X-CSRF-Token': getCsrfToken(),
+    },
   })
 }

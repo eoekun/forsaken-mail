@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { apiGet, apiPut } from '../lib/api'
-import { Save, Check } from 'lucide-react'
+import { useToast } from './Toast'
+import { Save } from 'lucide-react'
 
 const SETTING_SECTIONS = [
   {
@@ -30,15 +31,10 @@ const ALL_KEYS = SETTING_SECTIONS.flatMap(s => s.keys)
 
 export default function SettingsTab() {
   const { t } = useTranslation()
+  const toast = useToast()
   const [settings, setSettings] = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [toast, setToast] = useState('')
-  const toastTimerRef = useRef(null)
-
-  useEffect(() => {
-    return () => clearTimeout(toastTimerRef.current)
-  }, [])
 
   useEffect(() => {
     apiGet('/api/admin/settings')
@@ -55,11 +51,9 @@ export default function SettingsTab() {
         if (key in settings) updates[key] = settings[key]
       }
       await apiPut('/api/admin/settings', updates)
-      setToast(t('settings.saved'))
-      clearTimeout(toastTimerRef.current)
-      toastTimerRef.current = setTimeout(() => setToast(''), 3000)
+      toast.success(t('settings.saved'))
     } catch (e) {
-      setToast(t('settings.error', { message: e.message }))
+      toast.error(t('settings.error', { message: e.message }))
     } finally {
       setSaving(false)
     }
@@ -69,12 +63,6 @@ export default function SettingsTab() {
 
   return (
     <div className="card-modern p-5">
-      {toast && (
-        <div className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-lg bg-success/10 text-success text-sm">
-          <Check size={15} />
-          <span>{toast}</span>
-        </div>
-      )}
       <div className="space-y-6">
         {SETTING_SECTIONS.map(({ sectionKey, keys }) => (
           <div key={sectionKey}>

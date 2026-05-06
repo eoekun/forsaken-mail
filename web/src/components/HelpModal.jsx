@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { apiGet, apiPost } from '../lib/api'
 import { HelpCircle, Globe, Webhook, Mail, X, Eye, EyeOff } from 'lucide-react'
 
 export default function HelpModal({ host }) {
   const { t } = useTranslation()
+  const modalRef = useRef(null)
   const [dnsResult, setDnsResult] = useState('')
   const [webhookToken, setWebhookToken] = useState('')
   const [webhookMessage, setWebhookMessage] = useState('')
@@ -66,11 +67,11 @@ export default function HelpModal({ host }) {
     <>
       <button
         className="btn btn-circle btn-sm fixed bottom-6 right-6 bg-base-100 border border-base-300/60 shadow-lg hover:shadow-xl text-base-content/50 hover:text-primary z-40"
-        onClick={() => document.getElementById('help_modal').showModal()}
+        onClick={() => modalRef.current?.showModal()}
       >
         <HelpCircle size={18} />
       </button>
-      <dialog id="help_modal" className="modal">
+      <dialog ref={modalRef} className="modal">
         <div className="modal-box max-w-2xl rounded-2xl bg-base-100 p-0 overflow-hidden">
           <div className="flex items-center justify-between px-6 pt-5 pb-3">
             <h3 className="font-semibold text-lg">{t('help.title')}</h3>

@@ -26,6 +26,9 @@ const (
 
 var urlPattern = regexp.MustCompile(`^https?://`)
 
+// httpClient is reused across requests for connection pooling.
+var httpClient = &http.Client{Timeout: httpTimeout}
+
 // Result represents the outcome of a DingTalk webhook call.
 type Result struct {
 	OK         bool   `json:"ok"`
@@ -162,8 +165,7 @@ func postDingtalkText(tokenOrURL, text string) (*Result, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: httpTimeout}
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("send request: %w", err)
 	}

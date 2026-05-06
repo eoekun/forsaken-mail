@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -46,7 +47,11 @@ func NewRouter(
 ) *Router {
 	var provider auth.Provider
 	if cfg.AuthMode == "oauth" {
-		provider, _ = auth.NewProvider(cfg)
+		var err error
+		provider, err = auth.NewProvider(cfg)
+		if err != nil {
+			slog.Error("failed to create OAuth provider", "error", err)
+		}
 	}
 	return &Router{
 		cfg:               cfg,
@@ -85,8 +90,8 @@ func (rt *Router) Handler() http.Handler {
 	mux.Handle("/api/admin/settings", rt.authMW.Wrap(http.HandlerFunc(rt.routeAdminSettings)))
 	mux.Handle("/api/admin/status", rt.authMW.Wrap(http.HandlerFunc(rt.handleStatus)))
 
-	// Apply security headers middleware to all routes.
-	return securityHeaders(mux)
+	// Apply security headers and CSRF middleware to all routes.
+	return csrfMiddleware(securityHeaders(mux))
 }
 
 // routeAuth dispatches /auth/* routes based on the path suffix.

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import i18n from '../i18n'
 import { apiGet } from '../lib/api'
+import { normalizeMail } from '../lib/normalizeMail'
 
 const TABS_STORAGE_KEY = 'mailbox_tabs_v1'
 
@@ -209,23 +210,25 @@ export default function useWebSocket(host) {
   }, [])
 
   const clearMails = useCallback(() => {
+    const sid = activeShortIdRef.current
     setMailboxMap(prev => {
       const next = new Map(prev)
-      const existing = next.get(activeShortId)
+      const existing = next.get(sid)
       if (existing) {
-        next.set(activeShortId, { ...existing, mails: [] })
+        next.set(sid, { ...existing, mails: [] })
       }
       return next
     })
     setSelectedMail(null)
-  }, [activeShortId])
+  }, [])
 
   const markMailAsRead = useCallback((id) => {
+    const sid = activeShortIdRef.current
     setMailboxMap(prev => {
       const next = new Map(prev)
-      const existing = next.get(activeShortId)
+      const existing = next.get(sid)
       if (existing) {
-        next.set(activeShortId, {
+        next.set(sid, {
           ...existing,
           mails: existing.mails.map(m => m.id === id ? { ...m, is_read: true } : m),
           unreadCount: Math.max(0, existing.unreadCount - (existing.mails.find(m => m.id === id && !m.is_read) ? 1 : 0)),
@@ -234,10 +237,9 @@ export default function useWebSocket(host) {
       return next
     })
     setSelectedMail(prev => prev?.id === id ? { ...prev, is_read: true } : prev)
-  }, [activeShortId])
+  }, [])
 
   return {
-    shortId: activeShortId,
     tabs,
     activeShortId,
     setActiveShortId: subscribeToShortId,
@@ -251,16 +253,6 @@ export default function useWebSocket(host) {
     markMailAsRead,
     recentMails,
     loadRecentMails,
-  }
-}
-
-function normalizeMail(m) {
-  return {
-    ...m,
-    from: m.from || m.from_addr,
-    to: m.to || m.to_addr,
-    html: m.html || m.html_body,
-    text: m.text || m.text_body,
   }
 }
 

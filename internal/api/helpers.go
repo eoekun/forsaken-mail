@@ -15,8 +15,9 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	}
 }
 
-// readJSON reads and decodes a JSON request body into dest.
+// readJSON reads and decodes a JSON request body into dest with a 1 MB size limit.
 func readJSON(r *http.Request, dest any) error {
+	r.Body = http.MaxBytesReader(nil, r.Body, 1<<20) // 1 MB
 	defer r.Body.Close()
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()

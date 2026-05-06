@@ -2,33 +2,28 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from './Toast'
 import { Copy, Pencil, RefreshCw, Check } from 'lucide-react'
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 
 const SHORTID_REGEX = /^[a-z0-9._\-+]{1,64}$/
 
 export default function MailboxAddress({ shortId, host, onRefresh, onSetShortId }) {
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
-  const [copied, setCopied] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const inputRef = useRef(null)
-  const copiedTimerRef = useRef(null)
   const { t } = useTranslation()
   const toast = useToast()
+  const { copiedId, copy } = useCopyToClipboard()
 
   const address = shortId ? `${shortId}@${host}` : ''
-
-  useEffect(() => {
-    return () => clearTimeout(copiedTimerRef.current)
-  }, [])
+  const copied = copiedId === address
 
   const handleCopy = async () => {
     if (!address) return
     try {
       await navigator.clipboard.writeText(address)
-      setCopied(true)
+      copy(address, address)
       toast.success(t('mailbox.copied'))
-      clearTimeout(copiedTimerRef.current)
-      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
     } catch {}
   }
 

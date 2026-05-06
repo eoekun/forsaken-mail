@@ -33,7 +33,7 @@ export default function LoginPage() {
         )}
 
         <div className="card-modern p-6">
-          {isLocal ? <LocalLoginForm t={t} /> : <OAuthButtons t={t} />}
+          {isLocal ? <LocalLoginForm /> : <OAuthButtons />}
         </div>
 
         <p className="text-center text-xs text-base-content/30 mt-6">
@@ -44,7 +44,8 @@ export default function LoginPage() {
   )
 }
 
-function OAuthButtons({ t }) {
+function OAuthButtons() {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-col gap-3">
       <a
@@ -72,7 +73,8 @@ function OAuthButtons({ t }) {
   )
 }
 
-function LocalLoginForm({ t }) {
+function LocalLoginForm() {
+  const { t } = useTranslation()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

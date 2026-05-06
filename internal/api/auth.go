@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -17,6 +16,11 @@ import (
 func (rt *Router) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
+		return
+	}
+
+	if rt.provider == nil {
+		writeError(w, http.StatusInternalServerError, "OAuth provider not configured")
 		return
 	}
 
@@ -60,6 +64,11 @@ func (rt *Router) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
+		return
+	}
+
+	if rt.provider == nil {
+		writeError(w, http.StatusInternalServerError, "OAuth provider not configured")
 		return
 	}
 
@@ -120,23 +129,14 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, i18n.T(lang, "internal_server_error"))
 		return
 	}
-	if allowedEmails != "" {
-		allowed := false
-		for _, e := range strings.Split(allowedEmails, ",") {
-			if strings.TrimSpace(e) == email {
-				allowed = true
-				break
-			}
+	if !auth.IsEmailAllowed(email, allowedEmails) {
+		slog.Warn("OAuth login rejected by email whitelist", "email", email, "provider", provider)
+		ip := clientIP(r)
+		if auditErr := rt.auditStore.Record("LOGIN_REJECTED", email, `{"reason":"email not in whitelist"}`, ip); auditErr != nil {
+			slog.Error("failed to record rejected login audit", "error", auditErr)
 		}
-		if !allowed {
-			slog.Warn("OAuth login rejected by email whitelist", "email", email, "provider", provider)
-			ip := clientIP(r)
-			if auditErr := rt.auditStore.Record("LOGIN_REJECTED", email, `{"reason":"email not in whitelist"}`, ip); auditErr != nil {
-				slog.Error("failed to record rejected login audit", "error", auditErr)
-			}
-			http.Redirect(w, r, "/login?error=unauthorized_email", http.StatusFound)
-			return
-		}
+		http.Redirect(w, r, "/login?error=unauthorized_email", http.StatusFound)
+		return
 	}
 
 	// Create session.
@@ -187,7 +187,7 @@ func (rt *Router) handleLocalLogin(w http.ResponseWriter, r *http.Request) {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := readJSON(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "invalid_request"))
 		return
 	}

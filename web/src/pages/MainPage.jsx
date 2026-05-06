@@ -8,12 +8,13 @@ import MailDetail from '../components/MailDetail'
 import RecentMails from '../components/RecentMails'
 import HelpModal from '../components/HelpModal'
 import useWebSocket from '../hooks/useWebSocket'
+import { normalizeMail } from '../lib/normalizeMail'
 import { useAuth } from '../App'
 
 export default function MainPage() {
   const { config } = useAuth()
   const {
-    shortId, requestNewShortId,
+    requestNewShortId,
     tabs, activeShortId, setActiveShortId, subscribeToShortId, unsubscribeFromShortId,
     mails, selectedMail, setSelectedMail, clearMails, markMailAsRead,
     recentMails, loadRecentMails,
@@ -32,14 +33,7 @@ export default function MainPage() {
 
   const handleOpenRecentMail = useCallback((mail) => {
     subscribeToShortId(mail.short_id || (mail.to_addr || mail.to || '').split('@')[0])
-    // Normalize API field names to match MailDetail expectations
-    setSelectedMail({
-      ...mail,
-      from: mail.from || mail.from_addr,
-      to: mail.to || mail.to_addr,
-      html: mail.html || mail.html_body,
-      text: mail.text || mail.text_body,
-    })
+    setSelectedMail(normalizeMail(mail))
     setMobileView('detail')
   }, [subscribeToShortId, setSelectedMail])
 
@@ -48,7 +42,7 @@ export default function MainPage() {
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
         <MailboxAddress
-          shortId={shortId}
+          shortId={activeShortId}
           host={config?.host}
           onRefresh={requestNewShortId}
           onSetShortId={subscribeToShortId}

@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"net/http"
-	"strings"
 	"time"
 
 	"forsaken-mail/internal/i18n"
@@ -51,19 +50,10 @@ func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		if allowedEmails != "" {
-			found := false
-			for _, email := range strings.Split(allowedEmails, ",") {
-				if strings.TrimSpace(email) == session.Email {
-					found = true
-					break
-				}
-			}
-			if !found {
-				lang := i18n.LangFromRequest(r)
-				http.Error(w, i18n.T(lang, "forbidden"), http.StatusForbidden)
-				return
-			}
+		if !IsEmailAllowed(session.Email, allowedEmails) {
+			lang := i18n.LangFromRequest(r)
+			http.Error(w, i18n.T(lang, "forbidden"), http.StatusForbidden)
+			return
 		}
 
 		ctx := context.WithValue(r.Context(), emailKey, session.Email)
