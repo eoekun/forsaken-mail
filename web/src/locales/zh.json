@@ -38,7 +38,8 @@
     "set": "确定",
     "cancel": "取消",
     "connecting": "连接中...",
-    "copied": "已复制！"
+    "copied": "已复制！",
+    "blacklisted": "「{{id}}」包含保留关键词，不可使用"
   },
   "mailList": {
     "title": "邮件列表",

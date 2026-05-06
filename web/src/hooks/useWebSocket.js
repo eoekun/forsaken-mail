@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import i18n from '../i18n'
 import { apiGet } from '../lib/api'
 import { normalizeMail } from '../lib/normalizeMail'
+import { useToast } from '../components/Toast'
 
 const TABS_STORAGE_KEY = 'mailbox_tabs_v1'
 
@@ -11,6 +12,7 @@ export default function useWebSocket(host, keywordBlacklist) {
   const [activeShortId, setActiveShortId] = useState('')
   const [selectedMail, setSelectedMail] = useState(null)
   const [recentMails, setRecentMails] = useState([])
+  const toast = useToast()
   const wsRef = useRef(null)
   const reconnectTimer = useRef(null)
   const delayRef = useRef(1000)
@@ -193,7 +195,7 @@ export default function useWebSocket(host, keywordBlacklist) {
     // Client-side blacklist check
     const lower = id.toLowerCase()
     if (blacklistRef.current.some(kw => lower.includes(kw))) {
-      console.warn('short_id blocked by keyword blacklist:', id)
+      toast.error(i18n.t('mailbox.blacklisted', { id }))
       return
     }
 

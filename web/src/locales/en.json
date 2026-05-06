@@ -38,7 +38,8 @@
     "set": "Set",
     "cancel": "Cancel",
     "connecting": "Connecting...",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "blacklisted": "\"{{id}}\" contains a reserved keyword and cannot be used"
   },
   "mailList": {
     "title": "Mails",
