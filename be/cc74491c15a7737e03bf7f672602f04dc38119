@@ -1,0 +1,39 @@
+web/src/components/MailListItem.jsx
+  s_b54024376894de::t_895665120fdd33 1-82
+internal/mail/blacklist_test.go
+  s_b54024376894de::t_b03246fee01d7f 1-78
+web/src/components/MailList.jsx
+  s_b54024376894de::t_068d7e13d9432a 3-4,54-63
+internal/api/mail.go
+  s_b54024376894de::t_862f384db0acd9 71,73-77
+web/src/pages/RecentMailsPage.jsx
+  s_b54024376894de::t_c2513e65f7500c 177,179-181,190
+  s_b54024376894de::t_64e9b49b40531c 4,10
+internal/mail/store.go
+  s_b54024376894de::t_2809d36afdc86a 7
+  s_b54024376894de::t_073a69eecfb912 88-93
+internal/api/router.go
+  s_b54024376894de::t_76b6830a25587a 81-86
+internal/mail/store_test.go
+  s_b54024376894de::t_14cd8940eed919 1-195
+internal/api/helpers_test.go
+  s_b54024376894de::t_e1de04f07659e1 1-68
+internal/api/emails.go
+  s_b54024376894de::t_4a56eab941a66f 173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "becc74491c15a7737e03bf7f672602f04dc38119",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
