@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth, useTheme } from '../App'
 import { Sun, Moon, Shield, LogOut, Mail, Menu, Clock, KeyRound, Check } from 'lucide-react'
-import { formatMailTime } from '../lib/formatTime'
+import { formatMailTimeFixed } from '../lib/formatTime'
 import { formatSender } from '../lib/formatSender'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 
@@ -78,7 +78,7 @@ export default function Navbar({ recentMails, onOpenRecentMail }) {
                             </button>
                           )}
                           <span className="text-[11px] text-base-content/30 shrink-0 tabular-nums">
-                            {formatMailTime(mail.created_at, t)}
+                            {formatMailTimeFixed(mail.created_at)}
                           </span>
                         </div>
                       </div>
