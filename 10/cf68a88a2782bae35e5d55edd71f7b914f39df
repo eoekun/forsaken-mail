@@ -1,0 +1,19 @@
+internal/mail/store_test.go
+  s_b54024376894de::t_e36ae06253edf3 140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "10cf68a88a2782bae35e5d55edd71f7b914f39df",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
