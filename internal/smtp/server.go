@@ -143,7 +143,13 @@ func (s *session) Data(r io.Reader) error {
 		htmlBody = textBody
 	}
 
-	s.router.Handle(s.from, s.to, env.GetHeader("Subject"), textBody, htmlBody, int64(len(raw)), s.ip)
+	// Prefer the From: header (may contain display name) over envelope sender.
+	fromAddr := env.GetHeader("From")
+	if fromAddr == "" {
+		fromAddr = s.from
+	}
+
+	s.router.Handle(fromAddr, s.to, env.GetHeader("Subject"), textBody, htmlBody, int64(len(raw)), s.ip)
 	slog.Info("mail received", "from", s.from, "to", s.to, "subject", env.GetHeader("Subject"), "size", len(raw))
 	return nil
 }

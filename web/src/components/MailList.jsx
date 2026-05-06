@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Inbox, KeyRound, Search, Check, X } from 'lucide-react'
 import { formatMailTime } from '../lib/formatTime'
+import { formatSender } from '../lib/formatSender'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 
 export default function MailList({ mails, selectedMail, onSelect }) {
@@ -90,7 +91,7 @@ export default function MailList({ mails, selectedMail, onSelect }) {
                   <div className="flex items-baseline justify-between gap-2 mb-0.5">
                     <span className={`text-sm truncate flex items-center gap-1.5 ${isSelected ? 'font-semibold text-base-content' : isUnread ? 'font-semibold text-base-content' : 'text-base-content/50'}`}>
                       {isUnread && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                      <span className="truncate">{search ? highlightMatch(mail.from, search) : mail.from}</span>
+                      <span className="truncate" title={mail.from}>{search ? highlightMatch(formatSender(mail.from), search) : formatSender(mail.from)}</span>
                     </span>
                     <span className="text-[11px] text-base-content/30 shrink-0 tabular-nums">
                       {formatMailTime(mail.created_at, t)}

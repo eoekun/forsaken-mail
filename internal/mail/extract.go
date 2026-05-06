@@ -23,7 +23,9 @@ var codePatterns = []*regexp.Regexp{
 	// Chinese: 验证码、确认码、安全码、动态码、校验码
 	regexp.MustCompile(`(?:验证码|确认码|安全码|动态码|校验码|短信码)[\s:：]*(\d{4,8})`),
 	// Chinese: "验证码为123456", "验证码是123456"
-	regexp.MustCompile(`(?:验证码|确认码)[为是][\s:]*(\d{4,8})`),
+	regexp.MustCompile(`(?:验证码|确认码|安全码|动态码|校验码)[为是][\s:]*(\d{4,8})`),
+	// Chinese: "代码为123456", "代码是123456", "代码: 123456"
+	regexp.MustCompile(`代码[\s:：]*[为是]?[\s:：]*(\d{4,8})`),
 	// Chinese: "输入123456", "填写123456"
 	regexp.MustCompile(`(?:输入|填写|使用)[的]?(?:验证码|校验码)?[\s:：]*(\d{4,8})`),
 	// HTML: code inside <b>, <strong>, <span> with common class patterns
@@ -32,14 +34,24 @@ var codePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?m)^\s*(\d{4,8})\s*$`),
 	// Digits with spaces: "123 456" → captures "123456"
 	regexp.MustCompile(`(?i)(?:code|otp|pin|验证码)[\s:：]*(\d{2,4}\s+\d{2,6})`),
+	// Chinese: "你的 ChatGPT 代码为 624591" — subject-style patterns
+	regexp.MustCompile(`(?:代码|验证码|校验码)\s*[为是]\s*(\d{4,8})`),
 }
 
 var linkPattern = regexp.MustCompile(`https?://[^\s<>"')\]]+`)
 
+// htmlTagPattern strips HTML tags to get plain text for better code extraction.
+var htmlTagPattern = regexp.MustCompile(`(?s)<[^>]*>`)
+
 // Extract parses text and html bodies to find verification codes and URLs.
 // Returns deduplicated slices of codes and links.
 func Extract(textBody, htmlBody string) (codes []string, links []string) {
-	combined := textBody + "\n" + htmlBody
+	// Normalize line endings and strip HTML tags for better matching.
+	normalizedText := strings.ReplaceAll(textBody, "\r\n", "\n")
+	strippedHTML := htmlTagPattern.ReplaceAllString(htmlBody, " ")
+	strippedHTML = strings.ReplaceAll(strippedHTML, "\r\n", "\n")
+
+	combined := normalizedText + "\n" + strippedHTML
 
 	codeSet := make(map[string]struct{})
 	for _, re := range codePatterns {

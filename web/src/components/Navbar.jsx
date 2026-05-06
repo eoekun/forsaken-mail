@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth, useTheme } from '../App'
 import { Sun, Moon, Shield, LogOut, Mail, Menu, Clock, KeyRound, Check } from 'lucide-react'
 import { formatMailTime } from '../lib/formatTime'
+import { formatSender } from '../lib/formatSender'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 
 export default function Navbar({ recentMails, onOpenRecentMail }) {
@@ -61,7 +62,7 @@ export default function Navbar({ recentMails, onOpenRecentMail }) {
                                 {recipient}
                               </span>
                             )}
-                            <span className="text-[11px] text-base-content/50 truncate">{sender}</span>
+                            <span className="text-[11px] text-base-content/50 truncate">{formatSender(sender)}</span>
                           </div>
                           <p className="text-xs text-base-content/60 truncate">{mail.subject || t('mailList.noSubject')}</p>
                         </div>

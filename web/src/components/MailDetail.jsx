@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useToast } from './Toast'
 import { Mail, Copy, Check, ExternalLink, ArrowLeft, KeyRound } from 'lucide-react'
 import { apiPut } from '../lib/api'
+import { formatSender } from '../lib/formatSender'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 
 export default function MailDetail({ mail, onMailRead, onBack }) {
@@ -45,7 +46,7 @@ export default function MailDetail({ mail, onMailRead, onBack }) {
       <div className="p-3 sm:p-5">
         <div className="mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2">
-            <span className="text-base sm:text-lg font-semibold text-base-content truncate">{mail.from}</span>
+            <span className="text-base sm:text-lg font-semibold text-base-content truncate" title={mail.from}>{formatSender(mail.from)}</span>
             <span className="text-xs sm:text-sm text-base-content/50 shrink-0 tabular-nums">
               {new Date(mail.created_at).toLocaleString()}
             </span>
