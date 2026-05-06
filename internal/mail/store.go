@@ -99,7 +99,7 @@ const mailSelectColumns = `id, short_id, from_addr, to_addr, subject, text_body,
 // Save inserts a mail record into the database and sets mail.ID to the new row ID.
 // It extracts verification codes and links before saving.
 func (s *Store) Save(mail *Mail) error {
-	codes, links := Extract(mail.TextBody, mail.HTMLBody)
+	codes, links := Extract(mail.Subject, mail.TextBody, mail.HTMLBody)
 	mail.ExtractedCodes = codes
 	mail.ExtractedLinks = links
 
@@ -238,4 +238,51 @@ func (s *Store) CountByShortID(shortID string) (int, error) {
 	var count int
 	err := s.db.QueryRow(`SELECT COUNT(*) FROM mails WHERE short_id = ?`, shortID).Scan(&count)
 	return count, err
+}
+
+// Reextract re-runs code and link extraction on all mails for the given short ID
+// and updates the database. Returns the number of mails updated.
+func (s *Store) Reextract(shortID string) (int, error) {
+	rows, err := s.db.Query(
+		`SELECT id, subject, text_body, html_body FROM mails WHERE short_id = ?`, shortID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	type mailRow struct {
+		id       int64
+		subject  string
+		textBody string
+		htmlBody string
+	}
+	var rows_data []mailRow
+	for rows.Next() {
+		var r mailRow
+		if err := rows.Scan(&r.id, &r.subject, &r.textBody, &r.htmlBody); err != nil {
+			return 0, err
+		}
+		rows_data = append(rows_data, r)
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	updated := 0
+	for _, r := range rows_data {
+		codes, links := Extract(r.subject, r.textBody, r.htmlBody)
+		codesJSON, _ := json.Marshal(codes)
+		linksJSON, _ := json.Marshal(links)
+		res, err := s.db.Exec(
+			`UPDATE mails SET extracted_codes = ?, extracted_links = ? WHERE id = ?`,
+			string(codesJSON), string(linksJSON), r.id,
+		)
+		if err != nil {
+			continue
+		}
+		n, _ := res.RowsAffected()
+		updated += int(n)
+	}
+	return updated, nil
 }

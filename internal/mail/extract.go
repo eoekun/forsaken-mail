@@ -43,15 +43,15 @@ var linkPattern = regexp.MustCompile(`https?://[^\s<>"')\]]+`)
 // htmlTagPattern strips HTML tags to get plain text for better code extraction.
 var htmlTagPattern = regexp.MustCompile(`(?s)<[^>]*>`)
 
-// Extract parses text and html bodies to find verification codes and URLs.
+// Extract parses subject, text and html bodies to find verification codes and URLs.
 // Returns deduplicated slices of codes and links.
-func Extract(textBody, htmlBody string) (codes []string, links []string) {
+func Extract(subject, textBody, htmlBody string) (codes []string, links []string) {
 	// Normalize line endings and strip HTML tags for better matching.
 	normalizedText := strings.ReplaceAll(textBody, "\r\n", "\n")
 	strippedHTML := htmlTagPattern.ReplaceAllString(htmlBody, " ")
 	strippedHTML = strings.ReplaceAll(strippedHTML, "\r\n", "\n")
 
-	combined := normalizedText + "\n" + strippedHTML
+	combined := subject + "\n" + normalizedText + "\n" + strippedHTML
 
 	codeSet := make(map[string]struct{})
 	for _, re := range codePatterns {

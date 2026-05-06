@@ -16,6 +16,7 @@ export default function useWebSocket(host) {
   const delayRef = useRef(1000)
   const activeShortIdRef = useRef(activeShortId)
   const loadRecentMailsRef = useRef(null)
+  const hasConnectedRef = useRef(false)
 
   useEffect(() => {
     activeShortIdRef.current = activeShortId
@@ -30,8 +31,11 @@ export default function useWebSocket(host) {
   // Get mails for the active tab
   const mails = mailboxMap.get(activeShortId)?.mails || []
 
-  // Save tabs to localStorage whenever they change
+  // Save tabs to localStorage whenever they change.
+  // Skip the initial empty-state write to avoid overwriting saved tabs
+  // before ws.onopen has a chance to read them.
   useEffect(() => {
+    if (!hasConnectedRef.current) return
     const shortIds = Array.from(mailboxMap.keys())
     try {
       localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(shortIds))
@@ -81,6 +85,8 @@ export default function useWebSocket(host) {
       } else {
         ws.send(JSON.stringify({ type: 'request_shortid' }))
       }
+      // Allow localStorage saves after initial restoration is complete.
+      hasConnectedRef.current = true
     }
 
     ws.onmessage = (event) => {
@@ -257,7 +263,7 @@ export default function useWebSocket(host) {
 }
 
 function fetchStoredMails(shortId, setMailboxMap) {
-  apiGet(`/api/mails?shortId=${encodeURIComponent(shortId)}`)
+  apiGet(`/api/mails?shortId=${encodeURIComponent(shortId)}&reextract=true`)
     .then(mails => {
       if (!Array.isArray(mails) || mails.length === 0) return
       setMailboxMap(prev => {

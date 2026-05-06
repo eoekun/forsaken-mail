@@ -7,6 +7,7 @@ import (
 )
 
 // handleMails responds to GET /api/mails?shortId=xxx with the mail list.
+// Pass ?reextract=true to re-run code extraction on existing mails.
 func (rt *Router) handleMails(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
@@ -19,6 +20,11 @@ func (rt *Router) handleMails(w http.ResponseWriter, r *http.Request) {
 	if shortID == "" {
 		writeError(w, http.StatusBadRequest, i18n.T(lang, "shortid_required"))
 		return
+	}
+
+	// Re-extract codes/links for existing mails if requested.
+	if r.URL.Query().Get("reextract") == "true" {
+		rt.mailStore.Reextract(shortID)
 	}
 
 	mails, err := rt.mailStore.ListByShortID(shortID, 100)
