@@ -44,7 +44,7 @@ export default function RecentMailsPage() {
           labelMap.set(label, s)
         }
       }
-      setSenders(Array.from(labelMap.entries()).map(([label, value]) => ({ label, value })))
+      setSenders(Array.from(labelMap.entries()).map(([label]) => ({ label, value: label })))
       setRecipients(data.recipients || [])
     }).catch(() => {})
   }, [])
