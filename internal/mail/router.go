@@ -64,6 +64,14 @@ func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBod
 			continue
 		}
 
+		// Drop mail to blacklisted short IDs.
+		blacklist, _ := r.settings.Get("keyword_blacklist")
+		if isBlacklisted(shortID, blacklist) {
+			slog.Warn("mail dropped by keyword blacklist", "short_id", shortID, "from", from)
+			_ = r.auditStore.Record("MAIL_BLACKLISTED", addr, `{"reason":"keyword_blacklist"}`, senderIP)
+			continue
+		}
+
 		// Save to database.
 		m := &Mail{
 			ShortID:  shortID,
