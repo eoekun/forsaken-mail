@@ -49,38 +49,38 @@ export default function Navbar({ recentMails, onOpenRecentMail }) {
                     return (
                       <div
                         key={mail.id}
-                        className="px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-base-200 transition-colors border-b border-base-300/20 last:border-0"
+                        className="px-3 py-2 cursor-pointer hover:bg-base-200 transition-colors border-b border-base-300/20 last:border-0"
                         onClick={() => {
                           onOpenRecentMail(mail)
                           document.activeElement?.blur()
                         }}
                       >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            {recipient && (
-                              <span className="text-[11px] font-mono text-primary/70 bg-primary/5 px-1 py-0.5 rounded shrink-0">
-                                {recipient}
-                              </span>
-                            )}
-                            <span className="text-[11px] text-base-content/50 truncate">{formatSender(sender)}</span>
-                          </div>
-                          <p className="text-xs text-base-content/60 truncate">{mail.subject || t('mailList.noSubject')}</p>
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          {recipient && (
+                            <span className="text-[11px] font-mono text-primary/70 bg-primary/5 px-1 py-0.5 rounded shrink-0">
+                              {recipient}
+                            </span>
+                          )}
+                          <span className="text-[11px] text-base-content/50 truncate">{formatSender(sender)}</span>
                         </div>
-                        {codes.length > 0 && (
-                          <button
-                            onClick={(e) => handleCopyCode(e, mail)}
-                            className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold transition-all cursor-pointer ${
-                              copiedId === mail.id
-                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                                : 'bg-primary/10 text-primary hover:bg-primary/20'
-                            }`}
-                          >
-                            {copiedId === mail.id ? <Check size={10} /> : <KeyRound size={10} />}
-                          </button>
-                        )}
-                        <span className="text-[11px] text-base-content/30 shrink-0 tabular-nums">
-                          {formatMailTime(mail.created_at, t)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-base-content/60 truncate flex-1 min-w-0">{mail.subject || t('mailList.noSubject')}</p>
+                          {codes.length > 0 && (
+                            <button
+                              onClick={(e) => handleCopyCode(e, mail)}
+                              className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold transition-all cursor-pointer ${
+                                copiedId === mail.id
+                                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                  : 'bg-primary/10 text-primary hover:bg-primary/20'
+                              }`}
+                            >
+                              {copiedId === mail.id ? <Check size={10} /> : <KeyRound size={10} />}
+                            </button>
+                          )}
+                          <span className="text-[11px] text-base-content/30 shrink-0 tabular-nums">
+                            {formatMailTime(mail.created_at, t)}
+                          </span>
+                        </div>
                       </div>
                     )
                   })}
