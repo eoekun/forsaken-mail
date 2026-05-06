@@ -1,13 +1,15 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Inbox, KeyRound, Search, Check, X } from 'lucide-react'
-import { formatMailTime } from '../lib/formatTime'
+import { formatRelativeTime, formatAbsoluteTime } from '../lib/formatTime'
 import { formatSender } from '../lib/formatSender'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
+import useRelativeTime from '../hooks/useRelativeTime'
 
 export default function MailList({ mails, selectedMail, onSelect }) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
+  useRelativeTime()
   const { copiedId, copy } = useCopyToClipboard()
 
   const handleCopyCode = (e, mail) => {
@@ -93,8 +95,8 @@ export default function MailList({ mails, selectedMail, onSelect }) {
                       {isUnread && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
                       <span className="truncate" title={mail.from}>{search ? highlightMatch(formatSender(mail.from), search) : formatSender(mail.from)}</span>
                     </span>
-                    <span className="text-[11px] text-base-content/30 shrink-0 tabular-nums">
-                      {formatMailTime(mail.created_at, t)}
+                    <span className="text-[11px] text-base-content/30 shrink-0" title={formatAbsoluteTime(mail.created_at)}>
+                      {formatRelativeTime(mail.created_at)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

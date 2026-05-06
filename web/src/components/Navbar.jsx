@@ -2,12 +2,14 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth, useTheme } from '../App'
 import { Sun, Moon, Shield, LogOut, Mail, Menu, Clock, KeyRound, Check } from 'lucide-react'
-import { formatMailTimeFixed } from '../lib/formatTime'
+import { formatRelativeTime, formatAbsoluteTime } from '../lib/formatTime'
 import { formatSender } from '../lib/formatSender'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
+import useRelativeTime from '../hooks/useRelativeTime'
 
 export default function Navbar({ recentMails, onOpenRecentMail }) {
   const { config, user } = useAuth()
+  useRelativeTime()
   const { theme, toggleTheme } = useTheme()
   const { t, i18n } = useTranslation()
   const { copiedId, copy } = useCopyToClipboard()
@@ -77,8 +79,8 @@ export default function Navbar({ recentMails, onOpenRecentMail }) {
                               {copiedId === mail.id ? <Check size={10} /> : <KeyRound size={10} />}
                             </button>
                           )}
-                          <span className="text-[11px] text-base-content/30 shrink-0 tabular-nums">
-                            {formatMailTimeFixed(mail.created_at)}
+                          <span className="text-[11px] text-base-content/30 shrink-0" title={formatAbsoluteTime(mail.created_at)}>
+                            {formatRelativeTime(mail.created_at)}
                           </span>
                         </div>
                       </div>
