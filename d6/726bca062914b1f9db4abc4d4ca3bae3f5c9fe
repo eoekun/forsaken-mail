@@ -1,0 +1,41 @@
+internal/api/test_email.go
+  s_b54024376894de::t_8dac0dbb21f209 70
+web/src/locales/zh.json
+  s_b54024376894de::t_7b4dceba54550c 15
+  s_b54024376894de::t_8e4c34c1410966 51
+internal/webhook/sender.go
+  s_b54024376894de::t_7cfd6fb3e6c92b 167
+internal/config/config.go
+  s_b54024376894de::t_7ff301231fd2cd 35-36
+web/src/lib/formatTime.js
+  s_b54024376894de::t_10bdc297f90ca0 1-2,4-5,12-14,16,18,20,22-24
+web/src/locales/en.json
+  s_b54024376894de::t_109f52e6ac3a69 51
+  s_b54024376894de::t_8d0848c2e7d4ef 15
+cmd/server/main.go
+  s_b54024376894de::t_d72204e2086ce8 39
+  s_b54024376894de::t_7b2efa95238b93 168
+.env.example
+  s_b54024376894de::t_4bee46af23c8ba 3
+  s_b54024376894de::t_3201f096aebcb8 6
+web/src/components/Navbar.jsx
+  s_b54024376894de::t_cca62f4b680d15 30
+internal/settings/store.go
+  s_b54024376894de::t_52c35bd19a2a95 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "d6726bca062914b1f9db4abc4d4ca3bae3f5c9fe",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
