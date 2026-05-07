@@ -107,6 +107,12 @@
     "error": "Error: {{message}}",
     "saving": "Saving...",
     "save": "Save Settings",
+    "on": "ON",
+    "off": "OFF",
+    "testWebhook": "Test Webhook",
+    "testing": "Testing...",
+    "testSuccess": "Webhook test sent successfully!",
+    "testFailed": "Webhook test failed",
     "sections": {
       "general": "General",
       "security": "Security",

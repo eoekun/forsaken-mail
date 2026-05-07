@@ -107,6 +107,12 @@
     "error": "错误：{{message}}",
     "saving": "保存中...",
     "save": "保存设置",
+    "on": "开启",
+    "off": "关闭",
+    "testWebhook": "测试 Webhook",
+    "testing": "测试中...",
+    "testSuccess": "Webhook 测试发送成功！",
+    "testFailed": "Webhook 测试失败",
     "sections": {
       "general": "基本设置",
       "security": "安全设置",
