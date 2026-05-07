@@ -179,6 +179,7 @@ export default function RecentMailsPage() {
                         mail={mail}
                         isSelected={isSelected}
                         badge={mail.short_id}
+                        badgeCopyValue={mail.to_addr || mail.to}
                         onClick={async () => {
                           try {
                             const full = await apiGet(`/api/mails/${mail.id}`)

@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import { KeyRound, Check } from 'lucide-react'
+import { KeyRound, Check, Copy } from 'lucide-react'
 import { formatSender } from '../lib/formatSender'
 import { formatRelativeTime, formatAbsoluteTime } from '../lib/formatTime'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 
-export default function MailListItem({ mail, isSelected, onClick, badge, highlight, unread }) {
+export default function MailListItem({ mail, isSelected, onClick, badge, badgeCopyValue, highlight, unread }) {
   const { t } = useTranslation()
   const { copiedId, copy } = useCopyToClipboard()
 
@@ -16,6 +16,12 @@ export default function MailListItem({ mail, isSelected, onClick, badge, highlig
     const code = mail.extracted_codes?.[0]
     if (!code) return
     copy(code, mail.id)
+  }
+
+  const handleCopyBadge = (e) => {
+    e.stopPropagation()
+    if (!badgeCopyValue) return
+    copy(badgeCopyValue, `badge-${mail.id}`)
   }
 
   const highlightMatch = (text) => {
@@ -55,9 +61,24 @@ export default function MailListItem({ mail, isSelected, onClick, badge, highlig
       </div>
       <div className="flex items-center gap-2">
         {badge && (
-          <span className="text-[11px] font-mono text-primary/60 bg-primary/5 px-1 py-0.5 rounded shrink-0">
-            {badge}
-          </span>
+          badgeCopyValue ? (
+            <button
+              onClick={handleCopyBadge}
+              className={`shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-mono transition-all cursor-pointer ${
+                copiedId === `badge-${mail.id}`
+                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                  : 'text-primary/60 bg-primary/5 hover:bg-primary/10'
+              }`}
+              title={badgeCopyValue}
+            >
+              {copiedId === `badge-${mail.id}` ? <Check size={10} /> : <Copy size={10} />}
+              <span>{badge}</span>
+            </button>
+          ) : (
+            <span className="text-[11px] font-mono text-primary/60 bg-primary/5 px-1 py-0.5 rounded shrink-0">
+              {badge}
+            </span>
+          )
         )}
         <p className={`text-xs truncate flex-1 ${unread ? 'text-base-content/70 font-medium' : 'text-base-content/50'}`}>
           {highlight ? highlightMatch(mail.subject || t('mailList.noSubject')) : (mail.subject || t('mailList.noSubject'))}
