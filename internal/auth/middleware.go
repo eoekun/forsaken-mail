@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"forsaken-mail/internal/i18n"
 	"forsaken-mail/internal/settings"
 )
 
@@ -40,18 +39,6 @@ func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 		if time.Now().After(session.ExpiresAt) {
 			m.sessions.ClearCookie(w)
 			http.Redirect(w, r, "/login", http.StatusFound)
-			return
-		}
-
-		whitelist, err := m.settings.Get("login_whitelist")
-		if err != nil {
-			lang := i18n.LangFromRequest(r)
-			http.Error(w, i18n.T(lang, "internal_server_error"), http.StatusInternalServerError)
-			return
-		}
-		if !IsEmailAllowed(session.Email, whitelist) {
-			lang := i18n.LangFromRequest(r)
-			http.Error(w, i18n.T(lang, "forbidden"), http.StatusForbidden)
 			return
 		}
 
