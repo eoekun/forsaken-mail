@@ -1,0 +1,22 @@
+internal/webhook/sender.go
+  s_b54024376894de::t_298d2edbb0db41 75
+  s_b54024376894de::t_f646fe45e3197f 139
+  s_b54024376894de::t_62eb5b98595faa 112
+  s_b54024376894de::t_0ad590d0e5b80a 97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "c7f4ab52a2ce54bce16a309c34382bbe3fd77254",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
