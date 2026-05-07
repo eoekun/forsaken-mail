@@ -14,17 +14,12 @@ import (
 // handleOAuthLogin handles GET /auth/{provider}/login.
 // It generates a random state, stores it in a cookie, and redirects to the OAuth provider.
 func (rt *Router) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
-		return
-	}
-
 	if rt.provider == nil {
 		writeError(w, http.StatusInternalServerError, "OAuth provider not configured")
 		return
 	}
 
-	provider := extractProvider(r.URL.Path)
+	provider := r.PathValue("provider")
 	if provider == "" {
 		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "provider_required"))
 		return
@@ -62,17 +57,12 @@ func (rt *Router) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 // It verifies the state, exchanges the code for a token, gets the user email,
 // creates a session, and redirects to /.
 func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
-		return
-	}
-
 	if rt.provider == nil {
 		writeError(w, http.StatusInternalServerError, "OAuth provider not configured")
 		return
 	}
 
-	provider := extractProvider(r.URL.Path)
+	provider := r.PathValue("provider")
 	if provider == "" {
 		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "provider_required"))
 		return
@@ -157,10 +147,6 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 // handleLogout handles GET /auth/logout.
 // It clears the session cookie and redirects to /login.
 func (rt *Router) handleLogout(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
-		return
-	}
 
 	email := auth.GetEmail(r)
 	rt.sessions.ClearCookie(w)
@@ -212,15 +198,6 @@ func (rt *Router) handleLocalLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "email": req.Username})
-}
-
-// extractProvider extracts the provider name from a path like /auth/{provider}/login.
-func extractProvider(path string) string {
-	parts := strings.Split(strings.TrimPrefix(path, "/auth/"), "/")
-	if len(parts) >= 1 && parts[0] != "" {
-		return parts[0]
-	}
-	return ""
 }
 
 // buildRedirectURI constructs the OAuth callback redirect URI from the request.

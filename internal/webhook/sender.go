@@ -31,9 +31,91 @@ func NewSender(settings *settings.Store) *Sender {
 	return &Sender{settings: settings}
 }
 
+// parseConfig parses the JSON config string into a map.
+func parseConfig(configStr string) (map[string]string, error) {
+	var config map[string]string
+	if configStr != "" {
+		if err := json.Unmarshal([]byte(configStr), &config); err != nil {
+			return nil, err
+		}
+	}
+	return config, nil
+}
+
+// parseChatID parses a chat ID from JSON number or plain string.
+func parseChatID(chatID string) int64 {
+	var n int64
+	if err := json.Unmarshal([]byte(chatID), &n); err == nil {
+		return n
+	}
+	for _, c := range chatID {
+		if c >= '0' && c <= '9' {
+			n = n*10 + int64(c-'0')
+		}
+	}
+	return n
+}
+
+// newTelegramService creates a Telegram notify service from config.
+// Returns the service, chat ID, and any error.
+func newTelegramService(config map[string]string) (*telegram.Telegram, int64, error) {
+	token := config["token"]
+	chatID := config["chat_id"]
+	if token == "" || chatID == "" {
+		return nil, 0, nil
+	}
+
+	svc, err := telegram.New(token)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	chatIDInt := parseChatID(chatID)
+	if chatIDInt == 0 {
+		return nil, 0, nil
+	}
+
+	svc.AddReceivers(chatIDInt)
+	return svc, chatIDInt, nil
+}
+
+// newSlackService creates a Slack notify service from config.
+// Returns the service, channel, and any error.
+func newSlackService(config map[string]string) (*slack.Slack, string, error) {
+	token := config["token"]
+	channel := config["channel"]
+	if token == "" || channel == "" {
+		return nil, "", nil
+	}
+
+	svc := slack.New(token)
+	svc.AddReceivers(channel)
+	return svc, channel, nil
+}
+
+// dingtalkToken extracts the DingTalk token from config.
+func dingtalkToken(config map[string]string) string {
+	if t := config["token"]; t != "" {
+		return t
+	}
+	return config["url"]
+}
+
+// notifySend sends a message via a Telegram service.
+func notifySendTelegram(svc *telegram.Telegram, subject, body string) error {
+	n := notify.New()
+	n.UseServices(svc)
+	return n.Send(context.Background(), subject, body)
+}
+
+// notifySendSlack sends a message via a Slack service.
+func notifySendSlack(svc *slack.Slack, subject, body string) error {
+	n := notify.New()
+	n.UseServices(svc)
+	return n.Send(context.Background(), subject, body)
+}
+
 // Send sends a notification about a received email.
-// It reads the service type and config from the settings store at call time.
-// If webhook is not enabled or misconfigured, it silently skips.
 func (s *Sender) Send(from, to, subject, text string, codes []string) {
 	enabled, _ := s.settings.Get("webhook_enabled")
 	if enabled != "1" {
@@ -44,12 +126,10 @@ func (s *Sender) Send(from, to, subject, text string, codes []string) {
 	configStr, _ := s.settings.Get("webhook_config")
 	messageTemplate, _ := s.settings.Get("webhook_message")
 
-	var config map[string]string
-	if configStr != "" {
-		if err := json.Unmarshal([]byte(configStr), &config); err != nil {
-			slog.Error("failed to parse webhook_config", "error", err)
-			return
-		}
+	config, err := parseConfig(configStr)
+	if err != nil {
+		slog.Error("failed to parse webhook_config", "error", err)
+		return
 	}
 
 	switch strings.ToLower(strings.TrimSpace(service)) {
@@ -66,10 +146,7 @@ func (s *Sender) Send(from, to, subject, text string, codes []string) {
 
 // sendDingTalk sends via custom DingTalk implementation (supports markdown).
 func (s *Sender) sendDingTalk(from, to, subject, text string, codes []string, template string, config map[string]string) {
-	token := config["token"]
-	if token == "" {
-		token = config["url"]
-	}
+	token := dingtalkToken(config)
 	if token == "" {
 		return
 	}
@@ -87,79 +164,45 @@ func (s *Sender) sendDingTalk(from, to, subject, text string, codes []string, te
 
 // sendTelegram sends via notify Telegram service.
 func (s *Sender) sendTelegram(from, to, subject, text string, codes []string, template string, config map[string]string) {
-
-	token := config["token"]
-	chatID := config["chat_id"]
-	if token == "" || chatID == "" {
-		slog.Warn("telegram webhook misconfigured: missing token or chat_id")
-		return
-	}
-
-	svc, err := telegram.New(token)
+	svc, _, err := newTelegramService(config)
 	if err != nil {
 		slog.Error("failed to create telegram service", "error", err)
 		return
 	}
-
-	// Note: Telegram custom API endpoint requires overriding tgbotapi.APIEndpoint global.
-	// For network-level proxy, use HTTP_PROXY env var or a reverse proxy.
-
-	var chatIDInt int64
-	if err := json.Unmarshal([]byte(chatID), &chatIDInt); err != nil {
-		// Try parsing as plain number
-		chatIDInt = 0
-		for _, c := range chatID {
-			if c >= '0' && c <= '9' {
-				chatIDInt = chatIDInt*10 + int64(c-'0')
-			}
-		}
-	}
-	if chatIDInt == 0 {
-		slog.Error("invalid telegram chat_id", "chat_id", chatID)
+	if svc == nil {
+		slog.Warn("telegram webhook misconfigured: missing token or chat_id")
 		return
 	}
 
-	svc.AddReceivers(chatIDInt)
-
-	n := notify.New()
-	n.UseServices(svc)
-
 	body := BuildPlainText(template, from, to, subject, text, codes)
-	if err := n.Send(context.Background(), "New Mail", body); err != nil {
+	if err := notifySendTelegram(svc, "New Mail", body); err != nil {
 		slog.Error("telegram webhook send failed", "error", err)
 	}
 }
 
 // sendSlack sends via notify Slack service.
 func (s *Sender) sendSlack(from, to, subject, text string, codes []string, template string, config map[string]string) {
-
-	token := config["token"]
-	channel := config["channel"]
-	if token == "" || channel == "" {
+	svc, _, err := newSlackService(config)
+	if err != nil {
+		slog.Error("failed to create slack service", "error", err)
+		return
+	}
+	if svc == nil {
 		slog.Warn("slack webhook misconfigured: missing token or channel")
 		return
 	}
 
-	svc := slack.New(token)
-	svc.AddReceivers(channel)
-
-	n := notify.New()
-	n.UseServices(svc)
-
 	body := BuildPlainText(template, from, to, subject, text, codes)
-	if err := n.Send(context.Background(), "New Mail", body); err != nil {
+	if err := notifySendSlack(svc, "New Mail", body); err != nil {
 		slog.Error("slack webhook send failed", "error", err)
 	}
 }
 
 // SendTest sends a test message with the given config.
-// lang is used for translating user-facing messages.
 func (s *Sender) SendTest(service, configStr, message, lang string) (*Result, error) {
-	var config map[string]string
-	if configStr != "" {
-		if err := json.Unmarshal([]byte(configStr), &config); err != nil {
-			return &Result{OK: false, Message: "Invalid webhook config JSON."}, nil
-		}
+	config, err := parseConfig(configStr)
+	if err != nil {
+		return &Result{OK: false, Message: "Invalid webhook config JSON."}, nil
 	}
 
 	text := strings.TrimSpace(message)
@@ -169,53 +212,34 @@ func (s *Sender) SendTest(service, configStr, message, lang string) (*Result, er
 
 	switch strings.ToLower(strings.TrimSpace(service)) {
 	case "dingtalk":
-		token := config["token"]
-		if token == "" {
-			token = config["url"]
-		}
+		token := dingtalkToken(config)
 		if token == "" {
 			return &Result{OK: false, Message: i18n.T(lang, "webhook_token_empty")}, nil
 		}
 		return SendDingTalkText(token, text)
 
 	case "telegram":
-		token := config["token"]
-		chatID := config["chat_id"]
-		if token == "" || chatID == "" {
-			return &Result{OK: false, Message: "Missing token or chat_id."}, nil
-		}
-		svc, err := telegram.New(token)
+		svc, _, err := newTelegramService(config)
 		if err != nil {
 			return &Result{OK: false, Message: err.Error()}, nil
 		}
-		var chatIDInt int64
-		for _, c := range chatID {
-			if c >= '0' && c <= '9' {
-				chatIDInt = chatIDInt*10 + int64(c-'0')
-			}
+		if svc == nil {
+			return &Result{OK: false, Message: "Missing token or chat_id."}, nil
 		}
-		if chatIDInt == 0 {
-			return &Result{OK: false, Message: "Invalid chat_id."}, nil
-		}
-		svc.AddReceivers(chatIDInt)
-		n := notify.New()
-		n.UseServices(svc)
-		if err := n.Send(context.Background(), "Test", text); err != nil {
+		if err := notifySendTelegram(svc, "Test", text); err != nil {
 			return &Result{OK: false, Message: err.Error()}, nil
 		}
 		return &Result{OK: true, Message: "ok"}, nil
 
 	case "slack":
-		token := config["token"]
-		channel := config["channel"]
-		if token == "" || channel == "" {
+		svc, _, err := newSlackService(config)
+		if err != nil {
+			return &Result{OK: false, Message: err.Error()}, nil
+		}
+		if svc == nil {
 			return &Result{OK: false, Message: "Missing token or channel."}, nil
 		}
-		svc := slack.New(token)
-		svc.AddReceivers(channel)
-		n := notify.New()
-		n.UseServices(svc)
-		if err := n.Send(context.Background(), "Test", text); err != nil {
+		if err := notifySendSlack(svc, "Test", text); err != nil {
 			return &Result{OK: false, Message: err.Error()}, nil
 		}
 		return &Result{OK: true, Message: "ok"}, nil

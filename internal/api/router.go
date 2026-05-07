@@ -72,9 +72,17 @@ func (rt *Router) Handler() http.Handler {
 	mux := http.NewServeMux()
 
 	// Public routes (no auth required).
-	mux.HandleFunc("/auth/", rt.routeAuth)
-	mux.HandleFunc("/api/health", rt.handleHealth)
-	mux.Handle("/api/config", rt.authMW.OptionalAuth(http.HandlerFunc(rt.handleConfig)))
+	mux.HandleFunc("GET /auth/logout", rt.handleLogout)
+	mux.HandleFunc("GET /api/health", rt.handleHealth)
+	mux.Handle("GET /api/config", rt.authMW.OptionalAuth(http.HandlerFunc(rt.handleConfig)))
+
+	// Auth routes (method-aware, conditional on AUTH_MODE).
+	if rt.cfg.AuthMode == "local" {
+		mux.HandleFunc("POST /auth/login", rt.handleLocalLogin)
+	} else {
+		mux.HandleFunc("GET /auth/{provider}/login", rt.handleOAuthLogin)
+		mux.HandleFunc("GET /auth/{provider}/callback", rt.handleOAuthCallback)
+	}
 
 	// Protected routes (auth middleware applied).
 	mux.Handle("GET /api/mails", rt.authMW.Wrap(http.HandlerFunc(rt.handleMails)))
@@ -95,51 +103,6 @@ func (rt *Router) Handler() http.Handler {
 
 	// Apply security headers and CSRF middleware to all routes.
 	return csrfMiddleware(securityHeaders(mux))
-}
-
-// routeAuth dispatches /auth/* routes based on the path suffix.
-func (rt *Router) routeAuth(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
-
-	// /auth/logout
-	if path == "/auth/logout" {
-		rt.handleLogout(w, r)
-		return
-	}
-
-	// AUTH_MODE=local: /auth/login
-	if rt.cfg.AuthMode == "local" && path == "/auth/login" {
-		rt.handleLocalLogin(w, r)
-		return
-	}
-
-	// AUTH_MODE=oauth: /auth/{provider}/login or /auth/{provider}/callback
-	if rt.cfg.AuthMode == "oauth" && len(path) > len("/auth/") {
-		remainder := path[len("/auth/"):]
-		if len(remainder) > 0 {
-			// Find the action part after the provider.
-			slashIdx := -1
-			for i, c := range remainder {
-				if c == '/' {
-					slashIdx = i
-					break
-				}
-			}
-			if slashIdx >= 0 {
-				action := remainder[slashIdx+1:]
-				switch action {
-				case "login":
-					rt.handleOAuthLogin(w, r)
-					return
-				case "callback":
-					rt.handleOAuthCallback(w, r)
-					return
-				}
-			}
-		}
-	}
-
-	http.NotFound(w, r)
 }
 
 // securityHeaders wraps an http.Handler with security headers.
