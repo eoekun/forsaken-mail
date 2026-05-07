@@ -1,0 +1,22 @@
+web/src/components/MailListItem.jsx
+  s_b54024376894de::t_81836c6899b697 2,7,21-24
+  s_b54024376894de::t_2470dcdadc5752 64-81
+web/src/pages/RecentMailsPage.jsx
+  s_b54024376894de::t_854e5984f1252f 182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "888fc8d8c69ab7958cee7b57a0b220ca39c3176a",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
