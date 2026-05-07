@@ -1,0 +1,25 @@
+internal/webhook/dingtalk.go
+  s_b54024376894de::t_5d5673ec6e7ca2 24-28
+internal/webhook/sender.go
+  s_b54024376894de::t_d09a00f50e805f 33-34
+  s_b54024376894de::t_bf1b3846d93b5c 117-119,121,124
+  s_b54024376894de::t_6df4a0a5da0dea 9
+  s_b54024376894de::t_5273138cf65a9e 120,122-123,125-127
+  s_b54024376894de::t_7ea81e3038f32f 30-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "53c635ca4d06de7ac79622a1ac93d37627a2da10",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
