@@ -12,7 +12,7 @@
     "menu": "Menu"
   },
   "login": {
-    "title": "Forsaken Mail",
+    "title": "Tmail",
     "subtitle": "Sign in to access your temporary mailbox",
     "unauthorized": "Your email is not authorized to access this service.",
     "github": "Sign in with GitHub",
@@ -25,7 +25,6 @@
     "login": "Sign In",
     "loginFailed": "Invalid username or password"
   },
-  "main": {},
   "admin": {
     "pageTitle": "Admin Panel",
     "auditLogs": "Audit Logs",
@@ -49,9 +48,7 @@
     "time": "Time",
     "noSubject": "(no subject)",
     "searchPlaceholder": "Search emails...",
-    "noResults": "No matching emails",
-    "timeJustNow": "Just now",
-    "timeMinutesAgo": "{{count}}m ago"
+    "noResults": "No matching emails"
   },
   "mailDetail": {
     "title": "Mail Detail",
@@ -64,9 +61,6 @@
     "extractedLinks": "Links",
     "back": "Back",
     "codeCopied": "Code copied!"
-  },
-  "mailHistory": {
-    "recent": "Recent:"
   },
   "recentMails": {
     "title": "Recent Mails",
@@ -104,7 +98,6 @@
     "sendingViaQQ": "Sending via QQ SMTP...",
     "enterWebhookToken": "Please enter a webhook token.",
     "enterSenderAndCode": "Please enter sender email and auth code.",
-    "close": "Close",
     "error": "Error: {{message}}",
     "showAuthCode": "Show auth code",
     "hideAuthCode": "Hide auth code"

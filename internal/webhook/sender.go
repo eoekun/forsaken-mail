@@ -164,7 +164,7 @@ func (s *Sender) SendTest(service, configStr, message, lang string) (*Result, er
 
 	text := strings.TrimSpace(message)
 	if text == "" {
-		text = "Forsaken-Mail test message."
+		text = "Tmail test message."
 	}
 
 	switch strings.ToLower(strings.TrimSpace(service)) {

@@ -14,7 +14,7 @@ var seedKeys = map[string]struct {
 	defaultValue string
 }{
 	"mail_host":                {envKey: "MAIL_HOST", defaultValue: ""},
-	"site_title":               {envKey: "SITE_TITLE", defaultValue: "Forsaken Mail"},
+	"site_title":               {envKey: "SITE_TITLE", defaultValue: "Tmail"},
 	"login_whitelist":          {envKey: "LOGIN_WHITELIST", defaultValue: "eoekun@qq.com"},
 	"keyword_blacklist":        {envKey: "KEYWORD_BLACKLIST", defaultValue: "admin,postmaster,system,webmaster,administrator,hostmaster,service,server,root"},
 	"webhook_enabled":          {envKey: "WEBHOOK_ENABLED", defaultValue: "0"},

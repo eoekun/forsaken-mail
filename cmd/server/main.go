@@ -36,7 +36,7 @@ func main() {
 
 	logger.Setup(cfg)
 
-	slog.Info("forsaken-mail starting",
+	slog.Info("tmail starting",
 		"port", cfg.Port,
 		"mail_host", cfg.MailHost,
 		"smtp_addr", fmt.Sprintf("%s:%d", cfg.MailinHost, cfg.MailinPort),
@@ -165,7 +165,7 @@ func main() {
 		slog.Error("database close error", "error", err)
 	}
 
-	slog.Info("forsaken-mail stopped")
+	slog.Info("tmail stopped")
 }
 
 // spaHandler wraps an API handler with static file serving for the SPA.

@@ -67,7 +67,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	recipient := shortID + "@" + mailHost
 
 	subject := fmt.Sprintf("SMTP Test - %s", time.Now().Format("2006-01-02 15:04:05"))
-	body := fmt.Sprintf("This is a test email sent via SMTP to forsaken-mail.\n\nSender: %s\nRecipient: %s\nTime: %s\n", req.SenderEmail, recipient, time.Now().Format(time.RFC3339))
+	body := fmt.Sprintf("This is a test email sent via SMTP to tmail.\n\nSender: %s\nRecipient: %s\nTime: %s\n", req.SenderEmail, recipient, time.Now().Format(time.RFC3339))
 
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s",
 		req.SenderEmail, recipient, subject, body)

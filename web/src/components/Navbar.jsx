@@ -27,7 +27,7 @@ export default function Navbar({ recentMails, onOpenRecentMail }) {
         <div className="flex-1">
           <Link to="/" className="flex items-center gap-2 text-lg font-semibold text-base-content hover:text-primary transition-colors">
             <Mail size={20} />
-            {config?.siteTitle || 'Forsaken Mail'}
+            {config?.siteTitle || 'Tmail'}
           </Link>
         </div>
         <div className="flex-none flex items-center gap-1">
