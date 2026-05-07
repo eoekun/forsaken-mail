@@ -1,0 +1,20 @@
+CLAUDE.md
+  s_b54024376894de::t_c53fa4b51191c7 84-85
+  s_b54024376894de::t_0a007dc850f0c0 73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "e8670bcd61d8efbc894e02b327defc13b625ee68",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
