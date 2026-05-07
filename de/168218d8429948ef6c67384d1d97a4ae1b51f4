@@ -1,0 +1,27 @@
+web/src/locales/zh.json
+  s_b54024376894de::t_cb6f3165f5f997 139
+  s_b54024376894de::t_115304c0fdc2c7 142-143
+web/src/locales/en.json
+  s_b54024376894de::t_d9dc571850362e 142-143
+  s_b54024376894de::t_f0806c075afd47 139
+internal/mail/cleanup.go
+  s_b54024376894de::t_741349c44093ee 41-44,46-49,51-54,56-59
+web/src/components/SettingsTab.jsx
+  s_b54024376894de::t_194f9ceb5505b9 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "de168218d8429948ef6c67384d1d97a4ae1b51f4",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
