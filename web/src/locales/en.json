@@ -124,6 +124,7 @@
     "labels": {
       "mail_host": "Mail Host",
       "site_title": "Site Title",
+      "login_whitelist": "Login Whitelist",
       "keyword_blacklist": "Keyword Blacklist",
       "dingtalk_webhook_token": "DingTalk Webhook Token",
       "dingtalk_webhook_message": "DingTalk Webhook Message",
@@ -136,6 +137,7 @@
     "descriptions": {
       "mail_host": "The domain name used to generate email addresses",
       "site_title": "Custom title displayed in the navigation bar",
+      "login_whitelist": "Comma-separated emails allowed to log in via OAuth (empty = allow all)",
       "keyword_blacklist": "Comma-separated keywords to block mailbox creation",
       "dingtalk_webhook_token": "Token or URL for DingTalk webhook notifications",
       "dingtalk_webhook_message": "Custom message template for DingTalk notifications",

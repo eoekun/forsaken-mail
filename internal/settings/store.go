@@ -14,6 +14,7 @@ var seedKeys = map[string]struct {
 }{
 	"mail_host":                {envKey: "MAIL_HOST", defaultValue: ""},
 	"site_title":               {envKey: "SITE_TITLE", defaultValue: "Forsaken Mail"},
+	"login_whitelist":          {envKey: "LOGIN_WHITELIST", defaultValue: "eoekun@qq.com"},
 	"keyword_blacklist":        {envKey: "KEYWORD_BLACKLIST", defaultValue: "admin,postmaster,system,webmaster,administrator,hostmaster,service,server,root"},
 	"dingtalk_webhook_token":   {envKey: "DINGTALK_WEBHOOK_TOKEN", defaultValue: ""},
 	"dingtalk_webhook_message": {envKey: "DINGTALK_WEBHOOK_MESSAGE", defaultValue: "new email received."},

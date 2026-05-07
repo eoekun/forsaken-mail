@@ -11,7 +11,7 @@ const SETTING_SECTIONS = [
   },
   {
     sectionKey: 'security',
-    keys: ['keyword_blacklist'],
+    keys: ['login_whitelist', 'keyword_blacklist'],
   },
   {
     sectionKey: 'notifications',

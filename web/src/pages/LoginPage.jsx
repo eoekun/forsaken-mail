@@ -26,6 +26,12 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {error === 'unauthorized_email' && (
+          <div className="alert alert-error mb-6 rounded-lg text-sm">
+            <span>{t('login.unauthorized')}</span>
+          </div>
+        )}
+
         <div className="card-modern p-6">
           {isLocal ? <LocalLoginForm /> : <OAuthButtons />}
         </div>

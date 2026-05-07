@@ -124,6 +124,7 @@
     "labels": {
       "mail_host": "邮件主机",
       "site_title": "站点标题",
+      "login_whitelist": "登录白名单",
       "keyword_blacklist": "关键词黑名单",
       "dingtalk_webhook_token": "钉钉 Webhook Token",
       "dingtalk_webhook_message": "钉钉 Webhook 消息",
@@ -136,6 +137,7 @@
     "descriptions": {
       "mail_host": "用于生成邮箱地址的域名",
       "site_title": "导航栏中显示的自定义标题",
+      "login_whitelist": "允许通过 OAuth 登录的邮箱列表（逗号分隔，留空 = 允许所有）",
       "keyword_blacklist": "用于阻止创建邮箱的关键词（逗号分隔）",
       "dingtalk_webhook_token": "钉钉 Webhook 通知的 Token 或 URL",
       "dingtalk_webhook_message": "钉钉通知的自定义消息模板",
