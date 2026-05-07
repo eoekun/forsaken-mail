@@ -1,7 +1,7 @@
 package mail
 
 import (
-	"fmt"
+	"encoding/json"
 	"log/slog"
 	"strings"
 	"time"
@@ -93,8 +93,14 @@ func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBod
 		})
 
 		// Record audit event.
-		detail := fmt.Sprintf(`{"from":"%s","subject":"%s","size":%d}`, from, subject, rawSize)
-		if err := r.auditStore.Record("MAIL_RECEIVED", addr, detail, senderIP); err != nil {
+		detailMap := map[string]any{
+			"from":     from,
+			"to":       addr,
+			"subject":  subject,
+			"codes":    m.ExtractedCodes,
+		}
+		detailBytes, _ := json.Marshal(detailMap)
+		if err := r.auditStore.Record("MAIL_RECEIVED", addr, string(detailBytes), senderIP); err != nil {
 			slog.Error("failed to record audit event", "error", err)
 		}
 
