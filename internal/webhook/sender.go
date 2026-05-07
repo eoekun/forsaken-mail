@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/nikoksr/notify"
 	"github.com/nikoksr/notify/service/telegram"
 	"github.com/nikoksr/notify/service/slack"
@@ -19,6 +20,11 @@ type Result struct {
 	OK         bool   `json:"ok"`
 	Message    string `json:"message"`
 	StatusCode int    `json:"status_code,omitempty"`
+}
+
+// Sender sends webhook notifications to configured services.
+type Sender struct {
+	settings *settings.Store
 }
 
 // Sender sends webhook notifications to configured services.
@@ -106,6 +112,17 @@ func (s *Sender) sendTelegram(from, to, subject, text string, codes []string, te
 	if err != nil {
 		slog.Error("failed to create telegram service", "error", err)
 		return
+	}
+
+	// Apply custom API endpoint if configured (e.g., for regions where api.telegram.org is blocked)
+	if apiEndpoint := config["api_url"]; apiEndpoint != "" {
+		bot, err := tgbotapi.NewBotAPI(token)
+		if err != nil {
+			slog.Error("failed to create telegram bot", "error", err)
+			return
+		}
+		bot.SetAPIEndpoint(apiEndpoint)
+		svc.SetClient(bot)
 	}
 
 	var chatIDInt int64

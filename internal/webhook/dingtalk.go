@@ -21,7 +21,11 @@ const (
 var urlPattern = regexp.MustCompile(`^https?://`)
 
 // httpClient is reused across requests for connection pooling.
-var httpClient = &http.Client{Timeout: httpTimeout}
+// It uses http.DefaultTransport which respects HTTP_PROXY/HTTPS_PROXY env vars.
+var httpClient = &http.Client{
+	Timeout:   httpTimeout,
+	Transport: http.DefaultTransport,
+}
 
 // dingtalkMarkdownRequest is the JSON payload for DingTalk markdown message.
 type dingtalkMarkdownRequest struct {
