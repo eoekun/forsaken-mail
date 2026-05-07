@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/nikoksr/notify"
 	"github.com/nikoksr/notify/service/telegram"
 	"github.com/nikoksr/notify/service/slack"
@@ -20,11 +19,6 @@ type Result struct {
 	OK         bool   `json:"ok"`
 	Message    string `json:"message"`
 	StatusCode int    `json:"status_code,omitempty"`
-}
-
-// Sender sends webhook notifications to configured services.
-type Sender struct {
-	settings *settings.Store
 }
 
 // Sender sends webhook notifications to configured services.
@@ -114,16 +108,8 @@ func (s *Sender) sendTelegram(from, to, subject, text string, codes []string, te
 		return
 	}
 
-	// Apply custom API endpoint if configured (e.g., for regions where api.telegram.org is blocked)
-	if apiEndpoint := config["api_url"]; apiEndpoint != "" {
-		bot, err := tgbotapi.NewBotAPI(token)
-		if err != nil {
-			slog.Error("failed to create telegram bot", "error", err)
-			return
-		}
-		bot.SetAPIEndpoint(apiEndpoint)
-		svc.SetClient(bot)
-	}
+	// Note: Telegram custom API endpoint requires overriding tgbotapi.APIEndpoint global.
+	// For network-level proxy, use HTTP_PROXY env var or a reverse proxy.
 
 	var chatIDInt int64
 	if err := json.Unmarshal([]byte(chatID), &chatIDInt); err != nil {
