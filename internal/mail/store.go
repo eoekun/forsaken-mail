@@ -125,17 +125,9 @@ func (s *Store) Save(mail *Mail) error {
 	return nil
 }
 
-// ListByShortID returns up to limit mails for the given short ID, ordered by created_at DESC.
-func (s *Store) ListByShortID(shortID string, limit int) ([]Mail, error) {
-	rows, err := s.db.Query(
-		`SELECT `+mailSelectColumns+` FROM mails WHERE short_id = ? ORDER BY created_at DESC LIMIT ?`,
-		shortID, limit,
-	)
-	if err != nil {
-		return nil, err
-	}
+// collectRows iterates over sql.Rows and scans each row into a Mail struct.
+func collectRows(rows *sql.Rows) ([]Mail, error) {
 	defer rows.Close()
-
 	var mails []Mail
 	for rows.Next() {
 		m, err := scanMail(rows)
@@ -145,6 +137,36 @@ func (s *Store) ListByShortID(shortID string, limit int) ([]Mail, error) {
 		mails = append(mails, *m)
 	}
 	return mails, rows.Err()
+}
+
+// listDistinct queries a single distinct column and returns the values.
+func listDistinct(db *sql.DB, column string, limit int) ([]string, error) {
+	rows, err := db.Query(`SELECT DISTINCT `+column+` FROM mails ORDER BY `+column+` LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []string
+	for rows.Next() {
+		var v string
+		if err := rows.Scan(&v); err != nil {
+			return nil, err
+		}
+		result = append(result, v)
+	}
+	return result, rows.Err()
+}
+
+// ListByShortID returns up to limit mails for the given short ID, ordered by created_at DESC.
+func (s *Store) ListByShortID(shortID string, limit int) ([]Mail, error) {
+	rows, err := s.db.Query(
+		`SELECT `+mailSelectColumns+` FROM mails WHERE short_id = ? ORDER BY created_at DESC LIMIT ?`,
+		shortID, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return collectRows(rows)
 }
 
 // Count returns the total number of mail records.
@@ -226,17 +248,7 @@ func (s *Store) ListRecent(limit int) ([]Mail, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var mails []Mail
-	for rows.Next() {
-		m, err := scanMail(rows)
-		if err != nil {
-			return nil, err
-		}
-		mails = append(mails, *m)
-	}
-	return mails, rows.Err()
+	return collectRows(rows)
 }
 
 // CountByShortID returns the total number of mails for the given short ID.
@@ -277,17 +289,11 @@ func (s *Store) ListAll(page, pageSize int, shortID, from, query string) ([]Mail
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
-
-	var mails []Mail
-	for rows.Next() {
-		m, err := scanMail(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		mails = append(mails, *m)
+	mails, err := collectRows(rows)
+	if err != nil {
+		return nil, 0, err
 	}
-	return mails, total, rows.Err()
+	return mails, total, nil
 }
 
 // buildMailFilters constructs a WHERE clause and args for the given filters.
@@ -316,40 +322,12 @@ func buildMailFilters(shortID, from, query string) (string, []any) {
 
 // ListDistinctSenders returns up to limit distinct from_addr values.
 func (s *Store) ListDistinctSenders(limit int) ([]string, error) {
-	rows, err := s.db.Query(`SELECT DISTINCT from_addr FROM mails ORDER BY from_addr LIMIT ?`, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var result []string
-	for rows.Next() {
-		var v string
-		if err := rows.Scan(&v); err != nil {
-			return nil, err
-		}
-		result = append(result, v)
-	}
-	return result, rows.Err()
+	return listDistinct(s.db, "from_addr", limit)
 }
 
 // ListDistinctRecipients returns up to limit distinct short_id values.
 func (s *Store) ListDistinctRecipients(limit int) ([]string, error) {
-	rows, err := s.db.Query(`SELECT DISTINCT short_id FROM mails ORDER BY short_id LIMIT ?`, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var result []string
-	for rows.Next() {
-		var v string
-		if err := rows.Scan(&v); err != nil {
-			return nil, err
-		}
-		result = append(result, v)
-	}
-	return result, rows.Err()
+	return listDistinct(s.db, "short_id", limit)
 }
 
 // Reextract re-runs code and link extraction on all mails for the given short ID
@@ -369,20 +347,20 @@ func (s *Store) Reextract(shortID string) (int, error) {
 		textBody string
 		htmlBody string
 	}
-	var rows_data []mailRow
+	var rowsData []mailRow
 	for rows.Next() {
 		var r mailRow
 		if err := rows.Scan(&r.id, &r.subject, &r.textBody, &r.htmlBody); err != nil {
 			return 0, err
 		}
-		rows_data = append(rows_data, r)
+		rowsData = append(rowsData, r)
 	}
 	if err := rows.Err(); err != nil {
 		return 0, err
 	}
 
 	updated := 0
-	for _, r := range rows_data {
+	for _, r := range rowsData {
 		codes, links := Extract(r.subject, r.textBody, r.htmlBody)
 		codesJSON, _ := json.Marshal(codes)
 		linksJSON, _ := json.Marshal(links)

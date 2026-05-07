@@ -8,7 +8,6 @@ import (
 	"forsaken-mail/internal/audit"
 	"forsaken-mail/internal/auth"
 	"forsaken-mail/internal/config"
-	"forsaken-mail/internal/i18n"
 	"forsaken-mail/internal/mail"
 	"forsaken-mail/internal/settings"
 	"forsaken-mail/internal/smtp"
@@ -84,14 +83,15 @@ func (rt *Router) Handler() http.Handler {
 	mux.Handle("GET /api/mails/filters", rt.authMW.Wrap(http.HandlerFunc(rt.handleMailFilters)))
 	mux.Handle("GET /api/mails/{id}", rt.authMW.Wrap(http.HandlerFunc(rt.handleGetMail)))
 	mux.Handle("PUT /api/mails/{id}/read", rt.authMW.Wrap(http.HandlerFunc(rt.handleMailRead)))
-	mux.Handle("/api/emails/", rt.authMW.Wrap(http.HandlerFunc(rt.handleEmails)))
-	mux.Handle("/api/domain-test", rt.authMW.Wrap(http.HandlerFunc(rt.handleDomainTest)))
-	mux.Handle("/api/webhook/test", rt.authMW.Wrap(http.HandlerFunc(rt.handleWebhookTest)))
-	mux.Handle("/api/test-email", rt.authMW.Wrap(http.HandlerFunc(rt.handleTestEmail)))
-	mux.Handle("/ws", rt.authMW.Wrap(http.HandlerFunc(rt.handleWS)))
-	mux.Handle("/api/admin/audit-logs", rt.authMW.Wrap(http.HandlerFunc(rt.handleAuditLogs)))
-	mux.Handle("/api/admin/settings", rt.authMW.Wrap(http.HandlerFunc(rt.routeAdminSettings)))
-	mux.Handle("/api/admin/status", rt.authMW.Wrap(http.HandlerFunc(rt.handleStatus)))
+	mux.Handle("GET /api/emails/", rt.authMW.Wrap(http.HandlerFunc(rt.handleEmails)))
+	mux.Handle("POST /api/domain-test", rt.authMW.Wrap(http.HandlerFunc(rt.handleDomainTest)))
+	mux.Handle("POST /api/webhook/test", rt.authMW.Wrap(http.HandlerFunc(rt.handleWebhookTest)))
+	mux.Handle("POST /api/test-email", rt.authMW.Wrap(http.HandlerFunc(rt.handleTestEmail)))
+	mux.Handle("GET /ws", rt.authMW.Wrap(http.HandlerFunc(rt.handleWS)))
+	mux.Handle("GET /api/admin/audit-logs", rt.authMW.Wrap(http.HandlerFunc(rt.handleAuditLogs)))
+	mux.Handle("GET /api/admin/settings", rt.authMW.Wrap(http.HandlerFunc(rt.handleGetSettings)))
+	mux.Handle("PUT /api/admin/settings", rt.authMW.Wrap(http.HandlerFunc(rt.handleUpdateSettings)))
+	mux.Handle("GET /api/admin/status", rt.authMW.Wrap(http.HandlerFunc(rt.handleStatus)))
 
 	// Apply security headers and CSRF middleware to all routes.
 	return csrfMiddleware(securityHeaders(mux))
@@ -140,18 +140,6 @@ func (rt *Router) routeAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.NotFound(w, r)
-}
-
-// routeAdminSettings dispatches /api/admin/settings based on HTTP method.
-func (rt *Router) routeAdminSettings(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		rt.handleGetSettings(w, r)
-	case http.MethodPut:
-		rt.handleUpdateSettings(w, r)
-	default:
-		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
-	}
 }
 
 // securityHeaders wraps an http.Handler with security headers.
