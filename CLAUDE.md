@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Forsaken-Mail is a self-hosted disposable/temporary email service. Users receive emails at random or custom addresses on a configured domain and view them in real-time via a web UI. Optional DingTalk webhook notifications are supported.
+Tmail is a self-hosted disposable/temporary email service. Users receive emails at random or custom addresses on a configured domain and view them in real-time via a web UI. Optional webhook notifications via DingTalk, Telegram, or Slack.
 
 The codebase is **Go backend + React frontend**.
 
@@ -83,8 +83,8 @@ Stack: React 19 + React Router 7 + Tailwind 4 + DaisyUI 5 + Vite 6. i18n via i18
 - **`App.jsx`** — Router + AuthContext provider; routes: `/login`, `/`, `/recent`, `/admin`
 - **`hooks/useWebSocket.js`** — WebSocket lifecycle, mail state, exponential backoff reconnect (1s–30s), localStorage shortId history
 - **`lib/api.js`** — fetch wrapper with `credentials: 'same-origin'`, auto-redirect on 401
-- **`pages/`** — LoginPage (OAuth or local auth form), MainPage (mailbox UI), AdminPage (audit/settings/status tabs)
-- **`components/`** — MailboxAddress, MailboxTabs, MailList, MailDetail (DOMPurify-sanitized HTML), RecentMails, MailHistory, SettingsTab, StatusTab, AuditLogTab, HelpModal, Navbar, Toast
+- **`pages/`** — LoginPage, MainPage (mailbox UI), RecentMailsPage (all mails with search/filter), AdminPage (audit/settings/status tabs)
+- **`components/`** — MailboxTabs, MailList, MailListItem, MailDetail (DOMPurify-sanitized HTML), SettingsTab, StatusTab, AuditLogTab, HelpModal, Navbar, Toast
 
 ### SPA Serving
 
