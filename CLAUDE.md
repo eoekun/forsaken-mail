@@ -70,7 +70,7 @@ Browser <--(HTTP /api/*)--> internal/api (http.NewServeMux)
 - **`mail/`** — SQLite mail CRUD, router (SMTP->store->WS->webhook), periodic cleanup goroutine
 - **`ws/`** — WebSocket hub: manages shortId->client mappings, broadcasts mail
 - **`auth/`** — two modes: OAuth2 (GitHub/Google) or local (username/password via `AUTH_MODE`); AES-GCM session cookies; `login_whitelist` restricts OAuth logins (only checked in OAuth callback, not middleware, since local auth stores username not email)
-- **`api/`** — HTTP handlers on stdlib `http.NewServeMux` with Go 1.22+ route patterns (`GET /api/mails/{id}`, `PUT /api/mails/{id}/read`); `router.go` defines all routes and applies security headers (CSP, X-Frame-Options)
+- **`api/`** — HTTP handlers on stdlib `http.NewServeMux` with Go 1.22+ route patterns (`GET /api/mails/{id}`, `PUT /api/mails/{id}/read`, `GET /auth/{provider}/login`); `router.go` defines all routes and applies security headers (CSP, X-Frame-Options)
 - **`audit/`** — SQLite audit log CRUD
 - **`webhook/`** — Multi-platform webhook notifications via `nikoksr/notify` (Telegram, Slack) + custom DingTalk markdown sender. Config: `webhook_enabled`, `webhook_service`, `webhook_config` (JSON), `webhook_message`.
 - **`logger/`** — slog with lumberjack log rotation
@@ -81,7 +81,8 @@ Browser <--(HTTP /api/*)--> internal/api (http.NewServeMux)
 Stack: React 19 + React Router 7 + Tailwind 4 + DaisyUI 5 + Vite 6. i18n via i18next (en/zh locales in `locales/`).
 
 - **`App.jsx`** — Router + AuthContext provider; routes: `/login`, `/`, `/recent`, `/admin`
-- **`hooks/useWebSocket.js`** — WebSocket lifecycle, mail state, exponential backoff reconnect (1s–30s), localStorage shortId history
+- **`hooks/useWebSocketConnection.js`** — WebSocket lifecycle, reconnect with exponential backoff (1s–30s)
+- **`hooks/useWebSocket.js`** — mailbox tab state, mail operations, localStorage persistence, recent mails
 - **`lib/api.js`** — fetch wrapper with `credentials: 'same-origin'`, auto-redirect on 401
 - **`pages/`** — LoginPage, MainPage (mailbox UI), RecentMailsPage (all mails with search/filter), AdminPage (audit/settings/status tabs)
 - **`components/`** — MailboxTabs, MailList, MailListItem, MailDetail (DOMPurify-sanitized HTML), SettingsTab, StatusTab, AuditLogTab, HelpModal, Navbar, Toast
