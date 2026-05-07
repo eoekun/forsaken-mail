@@ -131,6 +131,7 @@
       "mail_retention_hours": "Mail Retention (Hours)",
       "mail_max_count": "Max Mail Count",
       "max_mail_size_bytes": "Max Mail Size (Bytes)",
+      "audit_mail_received": "Log Received Mails",
       "audit_retention_days": "Audit Retention (Days)",
       "audit_max_count": "Max Audit Count"
     },
@@ -144,6 +145,7 @@
       "mail_retention_hours": "Hours before old emails are automatically deleted (0 = permanent)",
       "mail_max_count": "Maximum number of emails stored per mailbox (0 = unlimited)",
       "max_mail_size_bytes": "Maximum size of a single email in bytes",
+      "audit_mail_received": "Record incoming mails as audit events (1 = on, 0 = off)",
       "audit_retention_days": "Days before old audit logs are automatically deleted",
       "audit_max_count": "Maximum number of audit log entries"
     }

@@ -23,7 +23,7 @@ const SETTING_SECTIONS = [
   },
   {
     sectionKey: 'audit',
-    keys: ['audit_retention_days', 'audit_max_count'],
+    keys: ['audit_mail_received', 'audit_retention_days', 'audit_max_count'],
   },
 ]
 

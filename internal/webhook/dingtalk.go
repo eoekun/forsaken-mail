@@ -49,7 +49,9 @@ func NewSender(settings *settings.Store) *Sender {
 // Send sends a notification about a received email.
 // It reads the token and message template from the settings store.
 // If the token is empty, it silently skips.
-func (s *Sender) Send(from, to, subject, text string) {
+// codes are the extracted verification codes; if non-empty, the notification
+// highlights codes instead of the email body.
+func (s *Sender) Send(from, to, subject, text string, codes []string) {
 	token, err := s.settings.Get("dingtalk_webhook_token")
 	if err != nil {
 		slog.Error("failed to get dingtalk_webhook_token", "error", err)
@@ -65,8 +67,8 @@ func (s *Sender) Send(from, to, subject, text string) {
 		return
 	}
 
-	body := buildMailMessage(messageTemplate, from, to, subject, text)
-	result, err := postDingtalkText(token, body)
+	body := buildMailMarkdown(messageTemplate, from, to, subject, text, codes)
+	result, err := postDingtalkMarkdown(token, "New Mail", body)
 	if err != nil {
 		slog.Error("DingTalk webhook request failed", "error", err)
 		return
@@ -128,14 +130,25 @@ func buildWebhookTarget(tokenOrURL string) *webhookTarget {
 	}
 }
 
-// dingtalkRequest is the JSON payload for DingTalk robot API.
-type dingtalkRequest struct {
+// dingtalkTextRequest is the JSON payload for DingTalk text message.
+type dingtalkTextRequest struct {
 	MsgType string              `json:"msgtype"`
 	Text    dingtalkTextContent `json:"text"`
 }
 
 type dingtalkTextContent struct {
 	Content string `json:"content"`
+}
+
+// dingtalkMarkdownRequest is the JSON payload for DingTalk markdown message.
+type dingtalkMarkdownRequest struct {
+	MsgType  string                 `json:"msgtype"`
+	Markdown dingtalkMarkdownContent `json:"markdown"`
+}
+
+type dingtalkMarkdownContent struct {
+	Title string `json:"title"`
+	Text  string `json:"text"`
 }
 
 // dingtalkResponse is the JSON response from DingTalk robot API.
@@ -150,7 +163,7 @@ func postDingtalkText(tokenOrURL, text string) (*Result, error) {
 		return &Result{OK: false, Message: "Webhook token/url is empty or invalid."}, nil
 	}
 
-	payload, err := json.Marshal(dingtalkRequest{
+	payload, err := json.Marshal(dingtalkTextRequest{
 		MsgType: "text",
 		Text:    dingtalkTextContent{Content: text},
 	})
@@ -198,28 +211,93 @@ func postDingtalkText(tokenOrURL, text string) (*Result, error) {
 	}, nil
 }
 
-// buildMailMessage constructs a formatted notification message.
-func buildMailMessage(template, from, to, subject, text string) string {
+func postDingtalkMarkdown(tokenOrURL, title, text string) (*Result, error) {
+	target := buildWebhookTarget(tokenOrURL)
+	if target == nil {
+		return &Result{OK: false, Message: "Webhook token/url is empty or invalid."}, nil
+	}
+
+	payload, err := json.Marshal(dingtalkMarkdownRequest{
+		MsgType:  "markdown",
+		Markdown: dingtalkMarkdownContent{Title: title, Text: text},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	apiURL := fmt.Sprintf("https://%s%s", target.Hostname, target.Path)
+	req, err := http.NewRequest(http.MethodPost, apiURL, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response: %w", err)
+	}
+
+	var dingResp dingtalkResponse
+	if err := json.Unmarshal(body, &dingResp); err != nil {
+		return &Result{
+			OK:         false,
+			Message:    "Failed to parse DingTalk response.",
+			StatusCode: resp.StatusCode,
+		}, nil
+	}
+
+	success := dingResp.ErrCode == 0
+	msg := "ok"
+	if !success {
+		msg = fmt.Sprintf("DingTalk returned errcode=%d, errmsg=%s", dingResp.ErrCode, dingResp.ErrMsg)
+	}
+
+	return &Result{
+		OK:         success,
+		Message:    msg,
+		StatusCode: resp.StatusCode,
+	}, nil
+}
+
+// buildMailMarkdown constructs a markdown-formatted notification message.
+// If codes are provided, highlights verification codes instead of email body.
+func buildMailMarkdown(template, from, to, subject, text string, codes []string) string {
 	title := strings.TrimSpace(template)
 	if title == "" {
-		title = "Forsaken-Mail: new email received."
+		title = "📬 New Mail"
 	}
 
-	date := time.Now().Format(time.RFC3339)
-	preview := buildTextPreview(text)
+	fromSafe := sanitizeSingleLine(from, "unknown")
+	toSafe := sanitizeSingleLine(to, "unknown")
+	subjectSafe := sanitizeSingleLine(subject, "(no subject)")
 
-	lines := []string{
-		title,
-		"From: " + sanitizeSingleLine(from, "unknown"),
-		"To: " + sanitizeSingleLine(to, "unknown"),
-		"Subject: " + sanitizeSingleLine(subject, "(no subject)"),
-		"Date: " + date,
-	}
-	if preview != "" {
-		lines = append(lines, "Preview: "+preview)
+	var sb strings.Builder
+	sb.WriteString("### " + title + "\n\n")
+	sb.WriteString("---\n\n")
+	sb.WriteString("**From:** " + fromSafe + "\n\n")
+	sb.WriteString("**To:** " + toSafe + "\n\n")
+	sb.WriteString("**Subject:** " + subjectSafe + "\n\n")
+
+	if len(codes) > 0 {
+		sb.WriteString("**Verification Codes:**\n\n")
+		for _, code := range codes {
+			sb.WriteString("> **`" + code + "`**\n\n")
+		}
+	} else {
+		preview := buildTextPreview(text)
+		if preview != "" {
+			sb.WriteString("**Preview:**\n\n")
+			sb.WriteString("> " + preview + "\n")
+		}
 	}
 
-	message := strings.Join(lines, "\n")
+	message := sb.String()
 	if len(message) > maxMessageLength {
 		message = message[:maxMessageLength] + "..."
 	}

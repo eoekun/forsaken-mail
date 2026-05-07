@@ -131,6 +131,7 @@
       "mail_retention_hours": "邮件保留时间（小时）",
       "mail_max_count": "最大邮件数量",
       "max_mail_size_bytes": "最大邮件大小（字节）",
+      "audit_mail_received": "记录收件审计日志",
       "audit_retention_days": "审计日志保留天数",
       "audit_max_count": "最大审计日志数量"
     },
@@ -144,6 +145,7 @@
       "mail_retention_hours": "旧邮件自动删除前的保留小时数（0 = 永久保留）",
       "mail_max_count": "每个邮箱存储的最大邮件数（0 = 不限制）",
       "max_mail_size_bytes": "单封邮件的最大大小（字节）",
+      "audit_mail_received": "将收件记录为审计事件（1 = 开启，0 = 关闭）",
       "audit_retention_days": "旧审计日志自动删除前的保留天数",
       "audit_max_count": "审计日志的最大条目数"
     }

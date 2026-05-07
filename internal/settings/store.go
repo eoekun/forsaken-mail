@@ -21,6 +21,7 @@ var seedKeys = map[string]struct {
 	"mail_retention_hours":     {envKey: "MAIL_RETENTION_HOURS", defaultValue: "1"},
 	"mail_max_count":           {envKey: "MAIL_MAX_COUNT", defaultValue: "100"},
 	"max_mail_size_bytes":      {envKey: "MAX_MAIL_SIZE_BYTES", defaultValue: "1048576"},
+	"audit_mail_received":      {envKey: "AUDIT_MAIL_RECEIVED", defaultValue: "1"},
 	"audit_retention_days":     {envKey: "AUDIT_RETENTION_DAYS", defaultValue: "7"},
 	"audit_max_count":          {envKey: "AUDIT_MAX_COUNT", defaultValue: "5000"},
 }

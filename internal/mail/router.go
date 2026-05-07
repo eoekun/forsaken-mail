@@ -14,7 +14,7 @@ import (
 // WebhookSender is the interface for sending webhook notifications.
 // Implementations live in the webhook package.
 type WebhookSender interface {
-	Send(from, to, subject, text string)
+	Send(from, to, subject, text string, codes []string)
 }
 
 // Router connects SMTP receipt to storage, WebSocket push, and webhook notification.
@@ -92,21 +92,24 @@ func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBod
 			CreatedAt:      m.CreatedAt.Format(time.RFC3339),
 		})
 
-		// Record audit event.
-		detailMap := map[string]any{
-			"from":     from,
-			"to":       addr,
-			"subject":  subject,
-			"codes":    m.ExtractedCodes,
-		}
-		detailBytes, _ := json.Marshal(detailMap)
-		if err := r.auditStore.Record("MAIL_RECEIVED", addr, string(detailBytes), senderIP); err != nil {
-			slog.Error("failed to record audit event", "error", err)
+		// Record audit event (if enabled).
+		auditMail, _ := r.settings.Get("audit_mail_received")
+		if auditMail != "0" {
+			detailMap := map[string]any{
+				"from":    from,
+				"to":      addr,
+				"subject": subject,
+				"codes":   m.ExtractedCodes,
+			}
+			detailBytes, _ := json.Marshal(detailMap)
+			if err := r.auditStore.Record("MAIL_RECEIVED", addr, string(detailBytes), senderIP); err != nil {
+				slog.Error("failed to record audit event", "error", err)
+			}
 		}
 
 		// Send webhook notification asynchronously.
 		if r.webhook != nil {
-			go r.webhook.Send(from, addr, subject, textBody)
+			go r.webhook.Send(from, addr, subject, textBody, m.ExtractedCodes)
 		}
 	}
 }
