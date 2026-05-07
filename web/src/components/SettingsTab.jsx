@@ -15,7 +15,7 @@ const SETTING_SECTIONS = [
   },
   {
     sectionKey: 'notifications',
-    keys: ['dingtalk_webhook_token', 'dingtalk_webhook_message'],
+    keys: ['webhook_enabled', 'webhook_service', 'webhook_config', 'webhook_message'],
   },
   {
     sectionKey: 'retention',

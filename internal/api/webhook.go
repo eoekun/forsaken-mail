@@ -8,11 +8,14 @@ import (
 
 // webhookTestRequest is the expected body for POST /api/webhook/test.
 type webhookTestRequest struct {
-	Token   string `json:"token"`
+	Service string `json:"service"`
+	Config  string `json:"config"`
 	Message string `json:"message"`
+	// Legacy fields for backward compatibility
+	Token string `json:"token"`
 }
 
-// handleWebhookTest responds to POST /api/webhook/test by sending a test DingTalk message.
+// handleWebhookTest responds to POST /api/webhook/test by sending a test message.
 func (rt *Router) handleWebhookTest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
@@ -27,7 +30,15 @@ func (rt *Router) handleWebhookTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := rt.webhook.SendTest(req.Token, req.Message, lang)
+	// Support legacy token field
+	service := req.Service
+	config := req.Config
+	if service == "" && req.Token != "" {
+		service = "dingtalk"
+		config = `{"token":"` + req.Token + `"}`
+	}
+
+	result, err := rt.webhook.SendTest(service, config, req.Message, lang)
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,
