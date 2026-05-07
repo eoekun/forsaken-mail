@@ -1,0 +1,36 @@
+web/src/locales/en.json
+  s_b54024376894de::t_086251b6497dc9 148
+  s_b54024376894de::t_fa9fc9f4fb1d39 134
+internal/webhook/dingtalk.go
+  s_b54024376894de::t_2763e008d69148 166
+  s_b54024376894de::t_5769f429a18631 133-134,143-151
+  s_b54024376894de::t_65cd335045598f 273-297,300
+  s_b54024376894de::t_5d8be50377ce23 52-54,70-71
+  s_b54024376894de::t_1502ed1ec67007 214-243,246-253,255-258,260-270
+web/src/locales/zh.json
+  s_b54024376894de::t_97fdaaece86a86 148
+  s_b54024376894de::t_08e93cd546cbb1 134
+internal/settings/store.go
+  s_b54024376894de::t_86455cf87a05c8 24
+internal/mail/router.go
+  s_b54024376894de::t_bd05ad8798cdfc 95-107,112
+  s_b54024376894de::t_36736a1a91f2b4 17
+web/src/components/SettingsTab.jsx
+  s_b54024376894de::t_5472fc51c2807f 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "a0d081d455f1c4eb0c8d99ed1b1e07c40754951c",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
