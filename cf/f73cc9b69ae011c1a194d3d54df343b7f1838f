@@ -1,0 +1,25 @@
+internal/webhook/sender.go
+  s_b54024376894de::t_f75bcd53495c9f 189,235
+  s_b54024376894de::t_5bd3520e2c9cb8 104-105
+  s_b54024376894de::t_33b3dc93256083 171,222
+internal/mail/store.go
+  s_b54024376894de::t_609b4f848e485b 144-146
+web/src/hooks/useWebSocketConnection.js
+  s_b54024376894de::t_0753c8667adac1 5-7,66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "cff73cc9b69ae011c1a194d3d54df343b7f1838f",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
