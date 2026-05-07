@@ -29,7 +29,16 @@ docker compose build           # 3-stage build (frontend -> Go -> Alpine)
 docker compose up              # run with .env config
 ```
 
-**Tests:** No test suite exists for either backend or frontend.
+**Tests** (Go only, no frontend tests):
+```bash
+# Run all tests (requires CGO_ENABLED=1 for SQLite)
+docker run --rm -v $(pwd):/src -w /src golang:1.24-alpine sh -c 'apk add --no-cache gcc musl-dev > /dev/null 2>&1 && go test ./...'
+
+# Run a single test
+docker run --rm -v $(pwd):/src -w /src golang:1.24-alpine sh -c 'apk add --no-cache gcc musl-dev > /dev/null 2>&1 && go test ./internal/mail/ -run TestListAll -v'
+```
+
+Test files: `internal/mail/store_test.go`, `internal/mail/blacklist_test.go`, `internal/api/helpers_test.go`.
 
 ## Architecture
 
@@ -60,8 +69,8 @@ Browser <--(HTTP /api/*)--> internal/api (http.NewServeMux)
 - **`smtp/`** — go-smtp Backend/Session implementation + per-IP rate limiter
 - **`mail/`** — SQLite mail CRUD, router (SMTP->store->WS->webhook), periodic cleanup goroutine
 - **`ws/`** — WebSocket hub: manages shortId->client mappings, broadcasts mail
-- **`auth/`** — two modes: OAuth2 (GitHub/Google) or local (username/password via `AUTH_MODE`); AES-GCM session cookies; email whitelist middleware
-- **`api/`** — HTTP handlers on stdlib `http.NewServeMux`; `router.go` defines all routes and applies security headers (CSP, X-Frame-Options)
+- **`auth/`** — two modes: OAuth2 (GitHub/Google) or local (username/password via `AUTH_MODE`); AES-GCM session cookies; `login_whitelist` restricts OAuth logins (only checked in OAuth callback, not middleware, since local auth stores username not email)
+- **`api/`** — HTTP handlers on stdlib `http.NewServeMux` with Go 1.22+ route patterns (`GET /api/mails/{id}`, `PUT /api/mails/{id}/read`); `router.go` defines all routes and applies security headers (CSP, X-Frame-Options)
 - **`audit/`** — SQLite audit log CRUD
 - **`webhook/`** — DingTalk webhook sender
 - **`logger/`** — slog with lumberjack log rotation
@@ -71,7 +80,7 @@ Browser <--(HTTP /api/*)--> internal/api (http.NewServeMux)
 
 Stack: React 19 + React Router 7 + Tailwind 4 + DaisyUI 5 + Vite 6. i18n via i18next (en/zh locales in `locales/`).
 
-- **`App.jsx`** — Router + AuthContext provider; routes: `/login`, `/`, `/admin`
+- **`App.jsx`** — Router + AuthContext provider; routes: `/login`, `/`, `/recent`, `/admin`
 - **`hooks/useWebSocket.js`** — WebSocket lifecycle, mail state, exponential backoff reconnect (1s–30s), localStorage shortId history
 - **`lib/api.js`** — fetch wrapper with `credentials: 'same-origin'`, auto-redirect on 401
 - **`pages/`** — LoginPage (OAuth or local auth form), MainPage (mailbox UI), AdminPage (audit/settings/status tabs)
@@ -83,14 +92,20 @@ Stack: React 19 + React Router 7 + Tailwind 4 + DaisyUI 5 + Vite 6. i18n via i18
 
 ### WebSocket Protocol (JSON)
 
-- Client→Server: `{"type":"request_shortid"}` or `{"type":"set_shortid","short_id":"..."}`
+- Client→Server: `{"type":"request_shortid"}`, `{"type":"subscribe","short_id":"..."}`
 - Server→Client: `{"type":"shortid","short_id":"..."}`, `{"type":"mail","data":{...}}`, `{"type":"error","message":"..."}`
+- Frontend uses `subscribe` for both initial and additional mailboxes; `set_shortid` exists server-side but is unused by the frontend
 
 ### Configuration
 
 All config is environment-variable based. See `.env.example`. Two tiers:
 - **A-class** (env vars, immutable at runtime): PORT, AUTH_MODE (`oauth`|`local`), OAUTH_*, ADMIN_USERNAME/PASSWORD (for local mode), SESSION_SECRET, COOKIE_SECURE, DB_PATH, MAILIN_*
-- **B-class** (SQLite `settings` table, mutable via `PUT /api/admin/settings`): mail_host, site_title, allowed_emails, keyword_blacklist, retention settings
+- **B-class** (SQLite `settings` table, mutable via `PUT /api/admin/settings`): mail_host (comma-separated for multi-domain), site_title, login_whitelist, keyword_blacklist, retention settings (0 = permanent/disabled)
+
+### Key Domain Concepts
+
+- **Multi-domain**: `mail_host` accepts comma-separated domains (e.g. `example.com,test.com`). SMTP accepts all listed domains. Frontend shows a domain selector when multiple hosts are configured.
+- **keyword_blacklist**: Controls mailbox **creation**, not mail content. Prevents users from creating shortIds containing blacklisted keywords (e.g. `admin`, `root`). Enforced client-side (from `/api/config`) and server-side in WebSocket `subscribe`/`set_shortid` handlers. Does NOT drop incoming mail to blacklisted addresses.
 
 ## Dev Workflow
 
