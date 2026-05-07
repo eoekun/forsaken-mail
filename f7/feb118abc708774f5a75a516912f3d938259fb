@@ -1,0 +1,25 @@
+internal/mail/store.go
+  s_b54024376894de::t_e2536f84a14d15 128-129,142-169
+  s_b54024376894de::t_7fbea61191901d 292-294,296
+  s_b54024376894de::t_5ee451250d12ec 251
+  s_b54024376894de::t_d616d440e758a7 325,330
+  s_b54024376894de::t_fa3ea4851c882a 350,356,363
+internal/api/router.go
+  s_b54024376894de::t_2230f596353ae9 86-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "f7feb118abc708774f5a75a516912f3d938259fb",
+  "prompts": {},
+  "sessions": {
+    "s_b54024376894de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3653e5a2-2b5d-4963-b92b-bb6b17eb2093",
+        "model": "mimo-v2.5-pro"
+      },
+      "human_author": "eoekun <eoekun@qq.com>"
+    }
+  }
+}
