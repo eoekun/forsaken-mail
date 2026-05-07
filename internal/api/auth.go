@@ -122,23 +122,6 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check email whitelist before creating session.
-	allowedEmails, err := rt.settings.Get("allowed_emails")
-	if err != nil {
-		slog.Error("failed to get allowed_emails setting", "error", err)
-		writeError(w, http.StatusInternalServerError, i18n.T(lang, "internal_server_error"))
-		return
-	}
-	if !auth.IsEmailAllowed(email, allowedEmails) {
-		slog.Warn("OAuth login rejected by email whitelist", "email", email, "provider", provider)
-		ip := clientIP(r)
-		if auditErr := rt.auditStore.Record("LOGIN_REJECTED", email, `{"reason":"email not in whitelist"}`, ip); auditErr != nil {
-			slog.Error("failed to record rejected login audit", "error", auditErr)
-		}
-		http.Redirect(w, r, "/login?error=unauthorized_email", http.StatusFound)
-		return
-	}
-
 	// Create session.
 	rt.sessions.SetCookie(w, &auth.SessionData{
 		Email:     email,

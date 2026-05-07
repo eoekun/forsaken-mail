@@ -11,7 +11,7 @@ const SETTING_SECTIONS = [
   },
   {
     sectionKey: 'security',
-    keys: ['allowed_emails', 'keyword_blacklist'],
+    keys: ['keyword_blacklist'],
   },
   {
     sectionKey: 'notifications',

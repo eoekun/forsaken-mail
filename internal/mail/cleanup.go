@@ -38,17 +38,25 @@ func runCleanup(mailStore *Store, auditStore *audit.Store, settingsStore *settin
 	auditDays := getSettingInt(settingsStore, "audit_retention_days", 7)
 	auditMaxCount := getSettingInt(settingsStore, "audit_max_count", 5000)
 
-	if err := mailStore.CleanupByAge(mailHours); err != nil {
-		slog.Error("mail cleanup by age failed", "hours", mailHours, "error", err)
+	if mailHours > 0 {
+		if err := mailStore.CleanupByAge(mailHours); err != nil {
+			slog.Error("mail cleanup by age failed", "hours", mailHours, "error", err)
+		}
 	}
-	if err := mailStore.CleanupByCount(mailMaxCount); err != nil {
-		slog.Error("mail cleanup by count failed", "max_count", mailMaxCount, "error", err)
+	if mailMaxCount > 0 {
+		if err := mailStore.CleanupByCount(mailMaxCount); err != nil {
+			slog.Error("mail cleanup by count failed", "max_count", mailMaxCount, "error", err)
+		}
 	}
-	if err := auditStore.CleanupByAge(auditDays); err != nil {
-		slog.Error("audit cleanup by age failed", "days", auditDays, "error", err)
+	if auditDays > 0 {
+		if err := auditStore.CleanupByAge(auditDays); err != nil {
+			slog.Error("audit cleanup by age failed", "days", auditDays, "error", err)
+		}
 	}
-	if err := auditStore.CleanupByCount(auditMaxCount); err != nil {
-		slog.Error("audit cleanup by count failed", "max_count", auditMaxCount, "error", err)
+	if auditMaxCount > 0 {
+		if err := auditStore.CleanupByCount(auditMaxCount); err != nil {
+			slog.Error("audit cleanup by count failed", "max_count", auditMaxCount, "error", err)
+		}
 	}
 
 	slog.Debug("cleanup completed",

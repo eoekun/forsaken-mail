@@ -124,7 +124,6 @@
     "labels": {
       "mail_host": "Mail Host",
       "site_title": "Site Title",
-      "allowed_emails": "Allowed Emails",
       "keyword_blacklist": "Keyword Blacklist",
       "dingtalk_webhook_token": "DingTalk Webhook Token",
       "dingtalk_webhook_message": "DingTalk Webhook Message",
@@ -137,12 +136,11 @@
     "descriptions": {
       "mail_host": "The domain name used to generate email addresses",
       "site_title": "Custom title displayed in the navigation bar",
-      "allowed_emails": "Comma-separated list of allowed email domains or addresses",
-      "keyword_blacklist": "Comma-separated keywords to block incoming mail",
+      "keyword_blacklist": "Comma-separated keywords to block mailbox creation",
       "dingtalk_webhook_token": "Token or URL for DingTalk webhook notifications",
       "dingtalk_webhook_message": "Custom message template for DingTalk notifications",
-      "mail_retention_hours": "Hours before old emails are automatically deleted",
-      "mail_max_count": "Maximum number of emails stored per mailbox",
+      "mail_retention_hours": "Hours before old emails are automatically deleted (0 = permanent)",
+      "mail_max_count": "Maximum number of emails stored per mailbox (0 = unlimited)",
       "max_mail_size_bytes": "Maximum size of a single email in bytes",
       "audit_retention_days": "Days before old audit logs are automatically deleted",
       "audit_max_count": "Maximum number of audit log entries"
