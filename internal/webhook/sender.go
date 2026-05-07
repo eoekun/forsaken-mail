@@ -101,15 +101,8 @@ func dingtalkToken(config map[string]string) string {
 	return config["url"]
 }
 
-// notifySend sends a message via a Telegram service.
-func notifySendTelegram(svc *telegram.Telegram, subject, body string) error {
-	n := notify.New()
-	n.UseServices(svc)
-	return n.Send(context.Background(), subject, body)
-}
-
-// notifySendSlack sends a message via a Slack service.
-func notifySendSlack(svc *slack.Slack, subject, body string) error {
+// notifySend sends a message via a notify.Notifier service.
+func notifySend(svc notify.Notifier, subject, body string) error {
 	n := notify.New()
 	n.UseServices(svc)
 	return n.Send(context.Background(), subject, body)
@@ -175,7 +168,7 @@ func (s *Sender) sendTelegram(from, to, subject, text string, codes []string, te
 	}
 
 	body := BuildPlainText(template, from, to, subject, text, codes)
-	if err := notifySendTelegram(svc, "New Mail", body); err != nil {
+	if err := notifySend(svc, "New Mail", body); err != nil {
 		slog.Error("telegram webhook send failed", "error", err)
 	}
 }
@@ -193,7 +186,7 @@ func (s *Sender) sendSlack(from, to, subject, text string, codes []string, templ
 	}
 
 	body := BuildPlainText(template, from, to, subject, text, codes)
-	if err := notifySendSlack(svc, "New Mail", body); err != nil {
+	if err := notifySend(svc, "New Mail", body); err != nil {
 		slog.Error("slack webhook send failed", "error", err)
 	}
 }
@@ -226,7 +219,7 @@ func (s *Sender) SendTest(service, configStr, message, lang string) (*Result, er
 		if svc == nil {
 			return &Result{OK: false, Message: "Missing token or chat_id."}, nil
 		}
-		if err := notifySendTelegram(svc, "Test", text); err != nil {
+		if err := notifySend(svc, "Test", text); err != nil {
 			return &Result{OK: false, Message: err.Error()}, nil
 		}
 		return &Result{OK: true, Message: "ok"}, nil
@@ -239,7 +232,7 @@ func (s *Sender) SendTest(service, configStr, message, lang string) (*Result, er
 		if svc == nil {
 			return &Result{OK: false, Message: "Missing token or channel."}, nil
 		}
-		if err := notifySendSlack(svc, "Test", text); err != nil {
+		if err := notifySend(svc, "Test", text); err != nil {
 			return &Result{OK: false, Message: err.Error()}, nil
 		}
 		return &Result{OK: true, Message: "ok"}, nil

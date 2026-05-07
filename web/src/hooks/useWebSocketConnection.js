@@ -2,7 +2,9 @@ import { useRef, useCallback, useEffect } from 'react'
 
 /**
  * Manages WebSocket connection lifecycle with exponential backoff reconnect.
- * Returns { send, onMessage, isConnected }.
+ * @param {function} onMessage - Callback for incoming messages. Receives { type, ... } objects.
+ *   A special { type: '_connected' } message is sent on each successful connection.
+ * @returns {{ send: function }} - Send data over the WebSocket.
  */
 export default function useWebSocketConnection(onMessage) {
   const wsRef = useRef(null)
@@ -61,7 +63,5 @@ export default function useWebSocketConnection(onMessage) {
     }
   }, [connect])
 
-  const isConnected = wsRef.current?.readyState === WebSocket.OPEN
-
-  return { send, isConnected }
+  return { send }
 }

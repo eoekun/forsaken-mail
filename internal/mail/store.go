@@ -141,6 +141,9 @@ func collectRows(rows *sql.Rows) ([]Mail, error) {
 
 // listDistinct queries a single distinct column and returns the values.
 func listDistinct(db *sql.DB, column string, limit int) ([]string, error) {
+	if column != "from_addr" && column != "short_id" {
+		return nil, fmt.Errorf("invalid column for listDistinct: %s", column)
+	}
 	rows, err := db.Query(`SELECT DISTINCT `+column+` FROM mails ORDER BY `+column+` LIMIT ?`, limit)
 	if err != nil {
 		return nil, err
