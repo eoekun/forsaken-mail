@@ -72,7 +72,7 @@ func (s *Sender) Send(from, to, subject, text string, codes []string) {
 }
 
 // sendDingTalk sends via custom DingTalk implementation (supports markdown).
-func (s *Sender) sendDingTalk(from, to, subject, text, codes []string, template string, config map[string]string) {
+func (s *Sender) sendDingTalk(from, to, subject, text string, codes []string, template string, config map[string]string) {
 	token := config["token"]
 	if token == "" {
 		token = config["url"]
@@ -94,6 +94,7 @@ func (s *Sender) sendDingTalk(from, to, subject, text, codes []string, template 
 
 // sendTelegram sends via notify Telegram service.
 func (s *Sender) sendTelegram(from, to, subject, text string, codes []string, template string, config map[string]string) {
+
 	token := config["token"]
 	chatID := config["chat_id"]
 	if token == "" || chatID == "" {
@@ -108,7 +109,7 @@ func (s *Sender) sendTelegram(from, to, subject, text string, codes []string, te
 	}
 
 	var chatIDInt int64
-	if _, err := json.Unmarshal([]byte(chatID), &chatIDInt); err != nil {
+	if err := json.Unmarshal([]byte(chatID), &chatIDInt); err != nil {
 		// Try parsing as plain number
 		chatIDInt = 0
 		for _, c := range chatID {
@@ -135,6 +136,7 @@ func (s *Sender) sendTelegram(from, to, subject, text string, codes []string, te
 
 // sendSlack sends via notify Slack service.
 func (s *Sender) sendSlack(from, to, subject, text string, codes []string, template string, config map[string]string) {
+
 	token := config["token"]
 	channel := config["channel"]
 	if token == "" || channel == "" {
