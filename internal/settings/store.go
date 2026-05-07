@@ -2,6 +2,7 @@ package settings
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -20,8 +21,6 @@ var seedKeys = map[string]struct {
 	"webhook_service":          {envKey: "WEBHOOK_SERVICE", defaultValue: "dingtalk"},
 	"webhook_config":           {envKey: "WEBHOOK_CONFIG", defaultValue: "{}"},
 	"webhook_message":          {envKey: "WEBHOOK_MESSAGE", defaultValue: "new email received."},
-	"dingtalk_webhook_token":   {envKey: "DINGTALK_WEBHOOK_TOKEN", defaultValue: ""},
-	"dingtalk_webhook_message": {envKey: "DINGTALK_WEBHOOK_MESSAGE", defaultValue: "new email received."},
 	"mail_retention_hours":     {envKey: "MAIL_RETENTION_HOURS", defaultValue: "1"},
 	"mail_max_count":           {envKey: "MAIL_MAX_COUNT", defaultValue: "100"},
 	"max_mail_size_bytes":      {envKey: "MAX_MAIL_SIZE_BYTES", defaultValue: "1048576"},
@@ -137,5 +136,37 @@ func (s *Store) SeedFromEnv(cfg *config.Config) error {
 			return err
 		}
 	}
+
+	// Migrate legacy DINGTALK_WEBHOOK_* env vars to new webhook_* settings.
+	s.migrateLegacyDingTalkEnv()
+
 	return nil
+}
+
+// migrateLegacyDingTalkEnv migrates old DINGTALK_WEBHOOK_TOKEN/MESSAGE env vars
+// to the new webhook_enabled/webhook_service/webhook_config/webhook_message settings.
+func (s *Store) migrateLegacyDingTalkEnv() {
+	token := os.Getenv("DINGTALK_WEBHOOK_TOKEN")
+	if token == "" {
+		return
+	}
+
+	// Only migrate if new settings are not already configured.
+	enabled, _ := s.Get("webhook_enabled")
+	configStr, _ := s.Get("webhook_config")
+	if enabled == "1" || configStr != "{}" {
+		return
+	}
+
+	s.Set("webhook_enabled", "1")
+	s.Set("webhook_service", "dingtalk")
+
+	msg := os.Getenv("DINGTALK_WEBHOOK_MESSAGE")
+	if msg == "" {
+		msg = "new email received."
+	}
+	s.Set("webhook_message", msg)
+
+	configJSON, _ := json.Marshal(map[string]string{"token": token})
+	s.Set("webhook_config", string(configJSON))
 }

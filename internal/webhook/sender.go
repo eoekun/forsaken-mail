@@ -37,13 +37,6 @@ func NewSender(settings *settings.Store) *Sender {
 func (s *Sender) Send(from, to, subject, text string, codes []string) {
 	enabled, _ := s.settings.Get("webhook_enabled")
 	if enabled != "1" {
-		// Fallback: check legacy dingtalk setting for backward compatibility
-		legacyToken, _ := s.settings.Get("dingtalk_webhook_token")
-		if strings.TrimSpace(legacyToken) == "" {
-			return
-		}
-		// Legacy mode: send via DingTalk
-		s.sendLegacyDingTalk(from, to, subject, text, codes, legacyToken)
 		return
 	}
 
@@ -156,20 +149,6 @@ func (s *Sender) sendSlack(from, to, subject, text string, codes []string, templ
 	body := BuildPlainText(template, from, to, subject, text, codes)
 	if err := n.Send(context.Background(), "New Mail", body); err != nil {
 		slog.Error("slack webhook send failed", "error", err)
-	}
-}
-
-// sendLegacyDingTalk handles backward compatibility with old dingtalk_webhook_token setting.
-func (s *Sender) sendLegacyDingTalk(from, to, subject, text string, codes []string, token string) {
-	messageTemplate, _ := s.settings.Get("dingtalk_webhook_message")
-	body := BuildMailMarkdown(messageTemplate, from, to, subject, text, codes)
-	result, err := SendDingTalkMarkdown(token, "New Mail", body)
-	if err != nil {
-		slog.Error("DingTalk webhook request failed", "error", err)
-		return
-	}
-	if !result.OK {
-		slog.Error("DingTalk webhook returned non-ok result", "status_code", result.StatusCode, "message", result.Message)
 	}
 }
 

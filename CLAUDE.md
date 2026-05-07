@@ -42,7 +42,7 @@ Test files: `internal/mail/store_test.go`, `internal/mail/blacklist_test.go`, `i
 
 ## Architecture
 
-Go module: `forsaken-mail`. Key dependencies: `coder/websocket`, `emersion/go-smtp`, `jhillyerd/enmime`, `mattn/go-sqlite3`, `golang.org/x/oauth2`.
+Go module: `forsaken-mail`. Key dependencies: `coder/websocket`, `emersion/go-smtp`, `jhillyerd/enmime`, `mattn/go-sqlite3`, `golang.org/x/oauth2`, `nikoksr/notify`.
 
 ### Data Flow
 
@@ -51,7 +51,7 @@ External mail --(port 25)--> internal/smtp (go-smtp)
   -> enmime parse -> mail.Router.Handle()
     -> SQLite (mail.Store)
     -> WebSocket Hub broadcast to clients on that shortId
-    -> DingTalk webhook (async)
+    -> Webhook notification (async, DingTalk/Telegram/Slack via nikoksr/notify)
 
 Browser <--(WebSocket /ws)--> internal/ws (Hub)
   -> client subscribes to a shortId
@@ -72,7 +72,7 @@ Browser <--(HTTP /api/*)--> internal/api (http.NewServeMux)
 - **`auth/`** — two modes: OAuth2 (GitHub/Google) or local (username/password via `AUTH_MODE`); AES-GCM session cookies; `login_whitelist` restricts OAuth logins (only checked in OAuth callback, not middleware, since local auth stores username not email)
 - **`api/`** — HTTP handlers on stdlib `http.NewServeMux` with Go 1.22+ route patterns (`GET /api/mails/{id}`, `PUT /api/mails/{id}/read`); `router.go` defines all routes and applies security headers (CSP, X-Frame-Options)
 - **`audit/`** — SQLite audit log CRUD
-- **`webhook/`** — DingTalk webhook sender
+- **`webhook/`** — Multi-platform webhook notifications via `nikoksr/notify` (Telegram, Slack) + custom DingTalk markdown sender. Config: `webhook_enabled`, `webhook_service`, `webhook_config` (JSON), `webhook_message`.
 - **`logger/`** — slog with lumberjack log rotation
 - **`i18n/`** — server-side translations (en/zh) for API error messages; resolved from `Accept-Language` header
 
@@ -100,7 +100,7 @@ Stack: React 19 + React Router 7 + Tailwind 4 + DaisyUI 5 + Vite 6. i18n via i18
 
 All config is environment-variable based. See `.env.example`. Two tiers:
 - **A-class** (env vars, immutable at runtime): PORT, AUTH_MODE (`oauth`|`local`), OAUTH_*, ADMIN_USERNAME/PASSWORD (for local mode), SESSION_SECRET, COOKIE_SECURE, DB_PATH, MAILIN_*
-- **B-class** (SQLite `settings` table, mutable via `PUT /api/admin/settings`): mail_host (comma-separated for multi-domain), site_title, login_whitelist, keyword_blacklist, retention settings (0 = permanent/disabled)
+- **B-class** (SQLite `settings` table, mutable via `PUT /api/admin/settings`): mail_host (comma-separated for multi-domain), site_title, login_whitelist, keyword_blacklist, webhook_* (enabled/service/config/message), audit_mail_received, retention settings (0 = permanent/disabled)
 
 ### Key Domain Concepts
 
