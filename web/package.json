@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:dist": "vite build",
+    "build:embed": "node ./scripts/sync-embed.mjs",
+    "build": "npm run build:dist && npm run build:embed",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -76,11 +76,13 @@ go run ./cmd/server
 cd web && npm install && npm run dev
 ```
 
-Build frontend for production (outputs to `embed/`):
+Build frontend for production:
 
 ```bash
 cd web && npm run build
 ```
+
+Vite now builds into `web/dist/`, then the build script syncs the generated assets into the server-facing `embed/` directory.
 
 ## Architecture
 

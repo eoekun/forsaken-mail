@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"forsaken-mail/internal/i18n"
 	"forsaken-mail/internal/mail"
@@ -47,55 +46,14 @@ type emailListResponse struct {
 	ShortID string          `json:"short_id"`
 }
 
-// handleEmails dispatches /api/emails/{shortId} and /api/emails/{shortId}/{mailId}.
-func (rt *Router) handleEmails(w http.ResponseWriter, r *http.Request) {
+// handleListEmailsByShortID returns all emails for /api/emails/{shortId}.
+func (rt *Router) handleListEmailsByShortID(w http.ResponseWriter, r *http.Request) {
 	lang := i18n.LangFromRequest(r)
-
-	// Trim prefix and split path.
-	path := strings.TrimPrefix(r.URL.Path, "/api/emails/")
-	parts := strings.SplitN(path, "/", 2)
-	shortID := parts[0]
+	shortID := r.PathValue("shortId")
 	if shortID == "" {
 		writeError(w, http.StatusBadRequest, i18n.T(lang, "shortid_required"))
 		return
 	}
-
-	mailID := ""
-	if len(parts) > 1 {
-		mailID = parts[1]
-	}
-
-	if mailID == "" {
-		// /api/emails/{shortId}
-		switch r.Method {
-		case http.MethodGet:
-			rt.handleListEmails(w, r, shortID)
-		case http.MethodDelete:
-			rt.handleDeleteAllEmails(w, r, shortID)
-		default:
-			writeError(w, http.StatusMethodNotAllowed, i18n.T(lang, "method_not_allowed"))
-		}
-	} else {
-		// /api/emails/{shortId}/{mailId}
-		id, err := strconv.ParseInt(mailID, 10, 64)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, i18n.T(lang, "invalid_mail_id"))
-			return
-		}
-		switch r.Method {
-		case http.MethodGet:
-			rt.handleGetEmail(w, r, id)
-		case http.MethodDelete:
-			rt.handleDeleteEmail(w, r, id)
-		default:
-			writeError(w, http.StatusMethodNotAllowed, i18n.T(lang, "method_not_allowed"))
-		}
-	}
-}
-
-// handleListEmails returns all emails for a short ID.
-func (rt *Router) handleListEmails(w http.ResponseWriter, r *http.Request, shortID string) {
-	lang := i18n.LangFromRequest(r)
 
 	mails, err := rt.mailStore.ListByShortID(shortID, 1000)
 	if err != nil {
@@ -119,6 +77,36 @@ func (rt *Router) handleListEmails(w http.ResponseWriter, r *http.Request, short
 	}
 
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// handleDeleteAllEmailsByShortID deletes all emails for /api/emails/{shortId}.
+func (rt *Router) handleDeleteAllEmailsByShortID(w http.ResponseWriter, r *http.Request) {
+	shortID := r.PathValue("shortId")
+	if shortID == "" {
+		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "shortid_required"))
+		return
+	}
+	rt.handleDeleteAllEmails(w, r, shortID)
+}
+
+// handleGetEmailByPath returns a single email for /api/emails/{shortId}/{mailId}.
+func (rt *Router) handleGetEmailByPath(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("mailId"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "invalid_mail_id"))
+		return
+	}
+	rt.handleGetEmail(w, r, id)
+}
+
+// handleDeleteEmailByPath deletes a single email for /api/emails/{shortId}/{mailId}.
+func (rt *Router) handleDeleteEmailByPath(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("mailId"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, i18n.T(i18n.LangFromRequest(r), "invalid_mail_id"))
+		return
+	}
+	rt.handleDeleteEmail(w, r, id)
 }
 
 // handleGetEmail returns a single email by ID.

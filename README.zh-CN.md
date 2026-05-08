@@ -76,11 +76,13 @@ go run ./cmd/server
 cd web && npm install && npm run dev
 ```
 
-构建生产版本前端（输出到 `embed/`）：
+构建生产版本前端：
 
 ```bash
 cd web && npm run build
 ```
+
+Vite 会先输出到 `web/dist/`，随后构建脚本再把生成的静态资源同步到服务端使用的 `embed/` 目录。
 
 ## 架构
 

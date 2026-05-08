@@ -1,6 +1,8 @@
 package api
 
 import (
+	"errors"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -9,7 +11,6 @@ import (
 )
 
 // handleMails responds to GET /api/mails?shortId=xxx with the mail list.
-// Pass ?reextract=true to re-run code extraction on existing mails.
 func (rt *Router) handleMails(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
@@ -22,11 +23,6 @@ func (rt *Router) handleMails(w http.ResponseWriter, r *http.Request) {
 	if shortID == "" {
 		writeError(w, http.StatusBadRequest, i18n.T(lang, "shortid_required"))
 		return
-	}
-
-	// Re-extract codes/links for existing mails if requested.
-	if r.URL.Query().Get("reextract") == "true" {
-		rt.mailStore.Reextract(shortID)
 	}
 
 	mails, err := rt.mailStore.ListByShortID(shortID, 100)
@@ -42,6 +38,55 @@ func (rt *Router) handleMails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, mails)
+}
+
+type reextractRequest struct {
+	ShortID string `json:"short_id"`
+}
+
+// handleReextractMails responds to POST /api/mails/reextract by re-running
+// extraction for an existing mailbox. The request body accepts
+// {"short_id":"..."}; query parameters remain as a short-term fallback.
+func (rt *Router) handleReextractMails(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, i18n.T(i18n.LangFromRequest(r), "method_not_allowed"))
+		return
+	}
+
+	lang := i18n.LangFromRequest(r)
+
+	shortID := r.URL.Query().Get("short_id")
+	if shortID == "" {
+		shortID = r.URL.Query().Get("shortId")
+	}
+
+	if r.ContentLength != 0 {
+		var req reextractRequest
+		if err := readJSON(r, &req); err != nil && !errors.Is(err, io.EOF) {
+			writeError(w, http.StatusBadRequest, i18n.T(lang, "invalid_request_body"))
+			return
+		}
+		if req.ShortID != "" {
+			shortID = req.ShortID
+		}
+	}
+
+	if shortID == "" {
+		writeError(w, http.StatusBadRequest, i18n.T(lang, "shortid_required"))
+		return
+	}
+
+	updated, err := rt.mailStore.Reextract(shortID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, i18n.T(lang, "list_mails_failed"))
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":  "ok",
+		"short_id": shortID,
+		"updated": updated,
+	})
 }
 
 // handleRecentMails responds to GET /api/mails/recent with the latest mails across all mailboxes.

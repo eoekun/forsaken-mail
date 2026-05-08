@@ -238,7 +238,7 @@ export default function useWebSocket(host, keywordBlacklist) {
 }
 
 function fetchStoredMails(shortId, setMailboxMap) {
-  apiGet(`/api/mails?shortId=${encodeURIComponent(shortId)}&reextract=true`)
+  apiGet(`/api/mails?shortId=${encodeURIComponent(shortId)}`)
     .then(mails => {
       if (!Array.isArray(mails) || mails.length === 0) return
       setMailboxMap(prev => {

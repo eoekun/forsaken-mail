@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -25,10 +26,10 @@ func NewMiddleware(sessions *SessionManager, settings *settings.Store) *Middlewa
 }
 
 func (m *Middleware) Wrap(next http.Handler) http.Handler {
-	return m.RequireAuth(next)
+	return m.RequireAPIAuth(next)
 }
 
-func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
+func (m *Middleware) RequirePageAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := m.sessions.GetCookie(r)
 		if err != nil {
@@ -39,6 +40,25 @@ func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 		if time.Now().After(session.ExpiresAt) {
 			m.sessions.ClearCookie(w)
 			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), emailKey, session.Email)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (m *Middleware) RequireAPIAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session, err := m.sessions.GetCookie(r)
+		if err != nil {
+			writeUnauthorizedJSON(w)
+			return
+		}
+
+		if time.Now().After(session.ExpiresAt) {
+			m.sessions.ClearCookie(w)
+			writeUnauthorizedJSON(w)
 			return
 		}
 
@@ -64,4 +84,10 @@ func (m *Middleware) OptionalAuth(next http.Handler) http.Handler {
 func GetEmail(r *http.Request) string {
 	email, _ := r.Context().Value(emailKey).(string)
 	return email
+}
+
+func writeUnauthorizedJSON(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
 }
