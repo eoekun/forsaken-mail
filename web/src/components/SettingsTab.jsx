@@ -1,47 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { apiGet, apiPut, apiPost } from '../lib/api'
 import { useToast } from './Toast'
 import { Save, Play } from 'lucide-react'
-
-// Input type metadata for each setting key.
-const INPUT_META = {
-  mail_host:              { type: 'text', placeholder: 'example.com,mail.example.com' },
-  site_title:             { type: 'text', placeholder: 'Tmail' },
-  login_whitelist:        { type: 'text', placeholder: 'user1@example.com,user2@example.com' },
-  keyword_blacklist:      { type: 'text', placeholder: 'admin,root,system' },
-  webhook_enabled:        { type: 'toggle' },
-  webhook_service:        { type: 'select', options: ['dingtalk', 'telegram', 'slack'] },
-  webhook_config:         { type: 'textarea', placeholder: '{"token":"...","chat_id":"..."}' },
-  webhook_message:        { type: 'text', placeholder: 'new email received.' },
-  mail_retention_hours:   { type: 'number', min: 0 },
-  mail_max_count:         { type: 'number', min: 0 },
-  max_mail_size_bytes:    { type: 'number', min: 0 },
-  audit_mail_received:    { type: 'toggle' },
-  audit_retention_days:   { type: 'number', min: 0 },
-  audit_max_count:        { type: 'number', min: 0 },
-}
-
-const SETTING_SECTIONS = [
-  { sectionKey: 'general',      keys: ['mail_host', 'site_title'] },
-  { sectionKey: 'security',     keys: ['login_whitelist', 'keyword_blacklist'] },
-  { sectionKey: 'notifications', keys: ['webhook_enabled', 'webhook_service', 'webhook_config', 'webhook_message'] },
-  { sectionKey: 'retention',    keys: ['mail_retention_hours', 'mail_max_count', 'max_mail_size_bytes'] },
-  { sectionKey: 'audit',        keys: ['audit_mail_received', 'audit_retention_days', 'audit_max_count'] },
-]
-
-const ALL_KEYS = SETTING_SECTIONS.flatMap(s => s.keys)
+import { SETTINGS_SECTIONS, createSettingsForm, getSettingField, serializeSettingsForm } from '../lib/settingsSchema'
+import { loadSettings, saveSettings, testWebhook } from '../lib/settingsApi'
 
 function SettingInput({ meta, value, onChange }) {
   const { t } = useTranslation()
 
   if (meta.type === 'toggle') {
-    const isOn = value === '1'
+    const isOn = Boolean(value)
     return (
       <button
         type="button"
         className={`btn btn-xs ${isOn ? 'btn-success' : 'btn-ghost'}`}
-        onClick={() => onChange(isOn ? '0' : '1')}
+        onClick={() => onChange(!isOn)}
       >
         {isOn ? t('settings.on') : t('settings.off')}
       </button>
@@ -79,8 +52,8 @@ function SettingInput({ meta, value, onChange }) {
       <input
         type="number"
         className="input-modern input-sm w-full"
-        value={value || ''}
-        onChange={e => onChange(e.target.value)}
+        value={Number.isFinite(value) ? value : ''}
+        onChange={e => onChange(e.target.value === '' ? meta.defaultValue : Number(e.target.value))}
         min={meta.min}
         placeholder={meta.placeholder}
       />
@@ -101,14 +74,14 @@ function SettingInput({ meta, value, onChange }) {
 export default function SettingsTab() {
   const { t } = useTranslation()
   const toast = useToast()
-  const [settings, setSettings] = useState({})
+  const [settings, setSettings] = useState(() => createSettingsForm())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
 
   useEffect(() => {
-    apiGet('/api/admin/settings')
-      .then(data => setSettings(data))
+    loadSettings()
+      .then(data => setSettings(createSettingsForm(data)))
       .catch(e => console.error('Failed to load settings:', e))
       .finally(() => setLoading(false))
   }, [])
@@ -116,11 +89,8 @@ export default function SettingsTab() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const updates = {}
-      for (const key of ALL_KEYS) {
-        if (key in settings) updates[key] = settings[key]
-      }
-      await apiPut('/api/admin/settings', updates)
+      const savedValues = await saveSettings(serializeSettingsForm(settings))
+      setSettings(createSettingsForm(savedValues))
       toast.success(t('settings.saved'))
     } catch (e) {
       toast.error(t('settings.error', { message: e.message }))
@@ -132,9 +102,10 @@ export default function SettingsTab() {
   const handleTestWebhook = async () => {
     setTesting(true)
     try {
-      const result = await apiPost('/api/webhook/test', {
-        service: settings.webhook_service || 'dingtalk',
-        config: settings.webhook_config || '{}',
+      const payload = serializeSettingsForm(settings)
+      const result = await testWebhook({
+        service: payload.webhook_service || 'dingtalk',
+        config: JSON.stringify(payload.webhook_config || {}),
         message: '',
       })
       if (result.ok) {
@@ -161,7 +132,7 @@ export default function SettingsTab() {
             </h3>
             <div className="space-y-4">
               {keys.map(key => {
-                const meta = INPUT_META[key] || { type: 'text' }
+                const meta = getSettingField(key)
                 return (
                   <div key={key}>
                     <label className="block text-xs font-medium text-base-content/60 mb-1">

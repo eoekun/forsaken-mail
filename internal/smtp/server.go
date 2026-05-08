@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"net"
-	"strconv"
 	"time"
 
 	"forsaken-mail/internal/audit"
@@ -22,14 +21,14 @@ const defaultMaxMailSize = 1 << 20 // 1 MiB
 // Server wraps a go-smtp server and connects it to the mail router.
 type Server struct {
 	server   *goSmtp.Server
-	router   *mail.Router
+	router   *mail.Processor
 	limiter  *RateLimiter
-	settings *settings.Store
+	settings *settings.Service
 	audit    *audit.Store
 }
 
 // New creates an SMTP server wired to the given dependencies.
-func New(router *mail.Router, limiter *RateLimiter, settingsStore *settings.Store, auditStore *audit.Store) *Server {
+func New(router *mail.Processor, limiter *RateLimiter, settingsStore *settings.Service, auditStore *audit.Store) *Server {
 	s := &Server{
 		router:   router,
 		limiter:  limiter,
@@ -86,8 +85,8 @@ func (s *Server) NewSession(c *goSmtp.Conn) (goSmtp.Session, error) {
 // ---------------------------------------------------------------------------
 
 type session struct {
-	router   *mail.Router
-	settings *settings.Store
+	router   *mail.Processor
+	settings *settings.Service
 	audit    *audit.Store
 	ip       string
 	from     string
@@ -100,13 +99,13 @@ func (s *session) Mail(from string, opts *goSmtp.MailOptions) error {
 }
 
 func (s *session) Rcpt(to string, opts *goSmtp.RcptOptions) error {
-	mailHost, err := s.settings.Get("mail_host")
-	if err != nil || mailHost == "" {
+	values, err := s.settings.Load()
+	if err != nil || values.MailHost == "" {
 		slog.Warn("mail_host not configured, rejecting recipient", "to", to, "ip", s.ip)
 		return fmt.Errorf("550 Mail service not configured")
 	}
 	_, domain := extractAddress(to)
-	if !mail.IsDomainAllowed(domain, mailHost) {
+	if !mail.IsDomainAllowed(domain, values.MailHost) {
 		slog.Warn("rejected outbound relay attempt", "from", s.from, "to", to, "ip", s.ip)
 		return fmt.Errorf("550 Relaying to %s is not allowed", domain)
 	}
@@ -189,15 +188,13 @@ func extractAddress(addr string) (local, domain string) {
 
 // getMaxMailSize reads the max_mail_size_bytes setting, falling back to the
 // default value of 1 MiB.
-func getMaxMailSize(s *settings.Store) int {
-	v, err := s.Get("max_mail_size_bytes")
-	if err != nil || v == "" {
+func getMaxMailSize(s *settings.Service) int {
+	values, err := s.Load()
+	if err != nil {
 		return defaultMaxMailSize
 	}
-	n, err := strconv.Atoi(v)
-	if err != nil || n <= 0 {
+	if values.MaxMailSizeBytes <= 0 {
 		return defaultMaxMailSize
 	}
-	return n
+	return values.MaxMailSizeBytes
 }
-

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"forsaken-mail/internal/i18n"
+	"forsaken-mail/internal/service"
 )
 
 // webhookTestRequest is the expected body for POST /api/webhook/test.
@@ -30,15 +31,12 @@ func (rt *Router) handleWebhookTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Support legacy token field
-	service := req.Service
-	config := req.Config
-	if service == "" && req.Token != "" {
-		service = "dingtalk"
-		config = `{"token":"` + req.Token + `"}`
-	}
-
-	result, err := rt.webhook.SendTest(service, config, req.Message, lang)
+	result, err := rt.webhookService.SendTest(service.WebhookTestRequest{
+		Service: req.Service,
+		Config:  req.Config,
+		Message: req.Message,
+		Token:   req.Token,
+	}, lang)
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"ok":      false,

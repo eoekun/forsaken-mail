@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -29,7 +27,7 @@ func (rt *Router) handleAuditLogs(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	logs, total, err := rt.auditStore.Query(event, offset, limit)
+	logs, total, err := rt.admin.QueryAuditLogs(event, offset, limit)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, i18n.T(lang, "query_audit_failed"))
 		return
@@ -71,7 +69,7 @@ func (rt *Router) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	settings, err := rt.settings.GetAll()
+	settings, err := rt.admin.GetSettings()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, i18n.T(i18n.LangFromRequest(r), "get_settings_failed"))
 		return
@@ -89,32 +87,25 @@ func (rt *Router) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 
 	lang := i18n.LangFromRequest(r)
 
-	var kvs map[string]string
+	var kvs map[string]any
 	if err := readJSON(r, &kvs); err != nil {
 		writeError(w, http.StatusBadRequest, i18n.T(lang, "invalid_request_body"))
 		return
 	}
 
-	if err := rt.settings.SetAll(kvs); err != nil {
-		writeError(w, http.StatusInternalServerError, i18n.T(lang, "update_settings_failed"))
-		return
-	}
-
-	// Record audit event.
 	email := auth.GetEmail(r)
 	ip := clientIP(r)
-	keys := make([]string, 0, len(kvs))
-	for k := range kvs {
-		keys = append(keys, k)
-	}
-	keysJSON, _ := json.Marshal(keys)
-	detail := fmt.Sprintf(`{"changed_keys":%s}`, string(keysJSON))
-	if err := rt.auditStore.Record("CONFIG_CHANGED", email, detail, ip); err != nil {
-		writeError(w, http.StatusInternalServerError, i18n.T(lang, "audit_log_failed"))
+
+	values, err := rt.admin.UpdateSettings(kvs, email, ip)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status": "ok",
+		"values": values,
+	})
 }
 
 // handleStatus responds to GET /api/admin/status with system status information.
@@ -124,18 +115,11 @@ func (rt *Router) handleStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mailCount, err := rt.mailStore.Count()
+	status, err := rt.admin.Status()
 	if err != nil {
-		mailCount = -1
+		writeError(w, http.StatusInternalServerError, i18n.T(i18n.LangFromRequest(r), "internal_server_error"))
+		return
 	}
 
-	mailHost, _ := rt.settings.Get("mail_host")
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"uptime":     rt.startTime.Format("2006-01-02T15:04:05Z"),
-		"mail_count": mailCount,
-		"ws_clients": rt.hub.ClientCount(),
-		"db_path":    rt.cfg.DBPath,
-		"mail_host":  mailHost,
-	})
+	writeJSON(w, http.StatusOK, status)
 }

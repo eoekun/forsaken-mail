@@ -9,6 +9,7 @@ import (
 	"forsaken-mail/internal/auth"
 	"forsaken-mail/internal/config"
 	"forsaken-mail/internal/mail"
+	"forsaken-mail/internal/service"
 	"forsaken-mail/internal/settings"
 	"forsaken-mail/internal/smtp"
 	"forsaken-mail/internal/webhook"
@@ -21,13 +22,15 @@ type Router struct {
 	sessions   *auth.SessionManager
 	authMW     *auth.Middleware
 	mailStore  *mail.Store
-	settings   *settings.Store
+	settings   *settings.Service
 	auditStore *audit.Store
 	hub        *ws.Hub
-	webhook    *webhook.Sender
-	provider          auth.Provider
-	localAuth         *auth.LocalAuth // non-nil only when AUTH_MODE=local
-	startTime         time.Time
+	admin            *service.AdminService
+	publicConfig     *service.PublicConfigService
+	webhookService   *service.WebhookService
+	provider         auth.Provider
+	localAuth        *auth.LocalAuth // non-nil only when AUTH_MODE=local
+	startTime        time.Time
 	domainTestLimiter *smtp.RateLimiter
 }
 
@@ -37,7 +40,7 @@ func NewRouter(
 	sessions *auth.SessionManager,
 	authMW *auth.Middleware,
 	mailStore *mail.Store,
-	settings *settings.Store,
+	settings *settings.Service,
 	auditStore *audit.Store,
 	hub *ws.Hub,
 	webhookSender *webhook.Sender,
@@ -51,6 +54,7 @@ func NewRouter(
 			slog.Error("failed to create OAuth provider", "error", err)
 		}
 	}
+	startTime := time.Now().UTC()
 	return &Router{
 		cfg:               cfg,
 		sessions:          sessions,
@@ -59,10 +63,12 @@ func NewRouter(
 		settings:          settings,
 		auditStore:        auditStore,
 		hub:               hub,
-		webhook:           webhookSender,
+		admin:             service.NewAdminService(settings, auditStore, mailStore, hub, startTime, cfg.DBPath),
+		publicConfig:      service.NewPublicConfigService(settings, cfg.AuthMode),
+		webhookService:    service.NewWebhookService(webhookSender),
 		provider:          provider,
 		localAuth:         localAuth,
-		startTime:         time.Now().UTC(),
+		startTime:         startTime,
 		domainTestLimiter: smtp.NewRateLimiter(10.0/60.0, 10), // 10 requests per minute, burst 10
 	}
 }

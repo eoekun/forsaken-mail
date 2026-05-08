@@ -113,7 +113,7 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check login whitelist before creating session.
-	whitelist, err := rt.settings.Get("login_whitelist")
+	whitelist, err := rt.settings.LoginWhitelist()
 	if err != nil {
 		slog.Error("failed to get login_whitelist setting", "error", err)
 		writeError(w, http.StatusInternalServerError, i18n.T(lang, "internal_server_error"))

@@ -1,285 +1,190 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import i18n from '../i18n'
-import { apiGet } from '../lib/api'
+import { fetchMailboxMails, fetchRecentMails } from '../lib/mailboxApi'
+import { loadLegacyShortId, loadSavedTabs, removeFromHistory, saveTabs, upsertHistory } from '../lib/mailboxStorage'
+import { notifyNewMail, requestNotificationPermission } from '../lib/mailboxNotifications'
 import { normalizeMail } from '../lib/normalizeMail'
 import { useToast } from '../components/Toast'
+import useMailboxState from './useMailboxState'
 import useWebSocketConnection from './useWebSocketConnection'
 
-const TABS_STORAGE_KEY = 'mailbox_tabs_v1'
+function normalizeBlacklist(keywordBlacklist) {
+  if (Array.isArray(keywordBlacklist)) {
+    return keywordBlacklist.map(keyword => keyword.trim().toLowerCase()).filter(Boolean)
+  }
+  if (typeof keywordBlacklist === 'string') {
+    return keywordBlacklist.split(',').map(keyword => keyword.trim().toLowerCase()).filter(Boolean)
+  }
+  return []
+}
 
-export default function useWebSocket(host, keywordBlacklist) {
-  const [mailboxMap, setMailboxMap] = useState(new Map())
-  const [activeShortId, setActiveShortId] = useState('')
-  const [selectedMail, setSelectedMail] = useState(null)
-  const [recentMails, setRecentMails] = useState([])
+function normalizeShortIdValue(shortId) {
+  return String(shortId || '').trim().toLowerCase()
+}
+
+function isBlacklisted(shortId, blacklist) {
+  const lower = normalizeShortIdValue(shortId)
+  return blacklist.some(keyword => lower.includes(keyword))
+}
+
+export default function useWebSocket(keywordBlacklist) {
+  const { state, dispatch, tabs, mails } = useMailboxState()
   const toast = useToast()
-  const activeShortIdRef = useRef(activeShortId)
+  const activeShortIdRef = useRef(state.activeShortId)
+  const sendRef = useRef(() => {})
   const loadRecentMailsRef = useRef(null)
   const hasConnectedRef = useRef(false)
   const blacklistRef = useRef([])
 
   useEffect(() => {
-    activeShortIdRef.current = activeShortId
-  }, [activeShortId])
+    activeShortIdRef.current = state.activeShortId
+  }, [state.activeShortId])
 
   useEffect(() => {
-    if (keywordBlacklist) {
-      blacklistRef.current = keywordBlacklist.split(',').map(k => k.trim().toLowerCase()).filter(Boolean)
-    } else {
-      blacklistRef.current = []
-    }
+    blacklistRef.current = normalizeBlacklist(keywordBlacklist)
   }, [keywordBlacklist])
 
-  // Derive tabs array from mailboxMap
-  const tabs = Array.from(mailboxMap.entries()).map(([shortId, data]) => ({
-    shortId,
-    unreadCount: data.unreadCount,
-  }))
-
-  const mails = mailboxMap.get(activeShortId)?.mails || []
-
-  // Save tabs to localStorage
   useEffect(() => {
     if (!hasConnectedRef.current) return
-    const shortIds = Array.from(mailboxMap.keys())
-    try {
-      localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(shortIds))
-    } catch {}
-  }, [mailboxMap])
+    saveTabs(Array.from(state.mailboxMap.keys()))
+  }, [state.mailboxMap])
 
-  // Handle WebSocket messages
+  const loadMailbox = useCallback(async (shortId) => {
+    try {
+      const storedMails = await fetchMailboxMails(shortId)
+      dispatch({ type: 'merge_mailbox_mails', shortId, mails: storedMails })
+    } catch {}
+  }, [dispatch])
+
+  const loadRecentMails = useCallback(async () => {
+    try {
+      const recentMails = await fetchRecentMails()
+      dispatch({ type: 'set_recent_mails', mails: recentMails })
+    } catch {}
+  }, [dispatch])
+  loadRecentMailsRef.current = loadRecentMails
+
   const handleMessage = useCallback((msg) => {
     switch (msg.type) {
       case '_connected': {
-        // Restore saved tabs on connect
-        let savedTabs = []
-        try {
-          const raw = localStorage.getItem(TABS_STORAGE_KEY)
-          savedTabs = raw ? JSON.parse(raw) : []
-          if (!Array.isArray(savedTabs)) savedTabs = []
-        } catch {}
+        const savedTabs = loadSavedTabs().filter(shortId => !isBlacklisted(shortId, blacklistRef.current))
+        const savedSingle = loadLegacyShortId()
 
-        const savedSingle = localStorage.getItem('shortid')
         if (savedTabs.length > 0) {
-          const validTabs = savedTabs.filter(id => !blacklistRef.current.some(kw => id.toLowerCase().includes(kw)))
-          for (const id of validTabs) {
-            send({ type: 'subscribe', short_id: id })
+          for (const shortId of savedTabs) {
+            sendRef.current({ type: 'subscribe', short_id: shortId })
+            void loadMailbox(shortId)
           }
-          setActiveShortId(prev => prev && validTabs.includes(prev) ? prev : validTabs[0])
-          setMailboxMap(prev => {
-            const next = new Map(prev)
-            for (const id of validTabs) {
-              if (!next.has(id)) next.set(id, { mails: [], unreadCount: 0 })
-            }
-            return next
+          dispatch({
+            type: 'hydrate_mailboxes',
+            shortIds: savedTabs,
+            activeShortId: savedTabs.includes(activeShortIdRef.current)
+              ? activeShortIdRef.current
+              : savedTabs[0],
           })
-          for (const id of validTabs) fetchStoredMails(id, setMailboxMap)
-        } else if (savedSingle && !blacklistRef.current.some(kw => savedSingle.toLowerCase().includes(kw))) {
-          send({ type: 'subscribe', short_id: savedSingle })
-          setActiveShortId(savedSingle)
-          setMailboxMap(new Map([[savedSingle, { mails: [], unreadCount: 0 }]]))
-          fetchStoredMails(savedSingle, setMailboxMap)
+        } else if (savedSingle && !isBlacklisted(savedSingle, blacklistRef.current)) {
+          sendRef.current({ type: 'subscribe', short_id: savedSingle })
+          dispatch({ type: 'hydrate_mailboxes', shortIds: [savedSingle], activeShortId: savedSingle })
+          void loadMailbox(savedSingle)
         } else {
-          send({ type: 'request_shortid' })
+          sendRef.current({ type: 'request_shortid' })
         }
         hasConnectedRef.current = true
         break
       }
+
       case 'shortid': {
-        const id = msg.short_id
-        setActiveShortId(id)
-        setMailboxMap(prev => {
-          const next = new Map(prev)
-          if (!next.has(id)) next.set(id, { mails: [], unreadCount: 0 })
-          return next
-        })
-        upsertHistory(id)
-        fetchStoredMails(id, setMailboxMap)
+        dispatch({ type: 'receive_shortid', shortId: msg.short_id })
+        upsertHistory(msg.short_id)
+        void loadMailbox(msg.short_id)
         break
       }
+
       case 'mail': {
-        const mailData = msg.data
-        const targetId = msg.short_id || activeShortIdRef.current
-        setMailboxMap(prev => {
-          const next = new Map(prev)
-          const existing = next.get(targetId) || { mails: [], unreadCount: 0 }
-          next.set(targetId, {
-            mails: [mailData, ...existing.mails],
-            unreadCount: existing.unreadCount + 1,
-          })
-          return next
+        const mailData = normalizeMail(msg.data)
+        dispatch({
+          type: 'receive_mail',
+          shortId: msg.short_id || activeShortIdRef.current,
+          mail: mailData,
         })
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(i18n.t('notification.newMail', { from: mailData.from }))
-        }
+        notifyNewMail(mailData)
         loadRecentMailsRef.current?.()
         break
       }
+
       case 'error':
         console.error('WS error:', msg.message)
         if (msg.message && msg.message.includes('blacklist')) {
-          setMailboxMap(prev => {
-            const next = new Map(prev)
-            let changed = false
-            for (const [id] of next) {
-              if (blacklistRef.current.some(kw => id.toLowerCase().includes(kw))) {
-                next.delete(id)
-                removeFromHistory(id)
-                changed = true
-              }
+          for (const shortId of Array.from(state.mailboxMap.keys())) {
+            if (isBlacklisted(shortId, blacklistRef.current)) {
+              removeFromHistory(shortId)
             }
-            return changed ? next : prev
-          })
+          }
+          dispatch({ type: 'remove_blacklisted_mailboxes', blacklist: blacklistRef.current })
         }
         break
     }
-  }, [])
+  }, [dispatch, loadMailbox, state.mailboxMap])
 
   const { send } = useWebSocketConnection(handleMessage)
-
-  // Load recent mails on mount
   useEffect(() => {
-    loadRecentMails()
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
-  }, [])
+    sendRef.current = send
+  }, [send])
+
+  useEffect(() => {
+    void loadRecentMails()
+    requestNotificationPermission()
+  }, [loadRecentMails])
 
   const subscribeToShortId = useCallback((id) => {
-    const lower = id.toLowerCase()
-    if (blacklistRef.current.some(kw => lower.includes(kw))) {
-      toast.error(i18n.t('mailbox.blacklisted', { id }))
+    const normalized = normalizeShortIdValue(id)
+    if (!normalized) {
       return
     }
-    send({ type: 'subscribe', short_id: id })
-    setActiveShortId(id)
-    setMailboxMap(prev => {
-      const next = new Map(prev)
-      if (!next.has(id)) next.set(id, { mails: [], unreadCount: 0 })
-      return next
-    })
-    upsertHistory(id)
-    fetchStoredMails(id, setMailboxMap)
-  }, [send, toast])
+    if (isBlacklisted(normalized, blacklistRef.current)) {
+      toast.error(i18n.t('mailbox.blacklisted', { id: normalized }))
+      return
+    }
+    sendRef.current({ type: 'subscribe', short_id: normalized })
+    dispatch({ type: 'activate_mailbox', shortId: normalized })
+    upsertHistory(normalized)
+    void loadMailbox(normalized)
+  }, [dispatch, loadMailbox, toast])
 
   const unsubscribeFromShortId = useCallback((id) => {
-    send({ type: 'unsubscribe', short_id: id })
-    setMailboxMap(prev => {
-      const next = new Map(prev)
-      next.delete(id)
-      return next
-    })
-    setActiveShortId(prev => prev === id ? '' : prev)
-    setSelectedMail(null)
-  }, [send])
-
-  useEffect(() => {
-    if (!activeShortId && mailboxMap.size > 0) {
-      setActiveShortId(mailboxMap.keys().next().value)
-    }
-  }, [activeShortId, mailboxMap])
-
-  const loadRecentMails = useCallback(() => {
-    apiGet('/api/mails/recent')
-      .then(mails => {
-        if (Array.isArray(mails)) setRecentMails(mails)
-      })
-      .catch(() => {})
-  }, [])
-  loadRecentMailsRef.current = loadRecentMails
+    sendRef.current({ type: 'unsubscribe', short_id: id })
+    dispatch({ type: 'remove_mailbox', shortId: id })
+  }, [dispatch])
 
   const requestNewShortId = useCallback(() => {
-    send({ type: 'request_shortid' })
-  }, [send])
+    sendRef.current({ type: 'request_shortid' })
+  }, [])
 
   const clearMails = useCallback(() => {
-    const sid = activeShortIdRef.current
-    setMailboxMap(prev => {
-      const next = new Map(prev)
-      const existing = next.get(sid)
-      if (existing) next.set(sid, { ...existing, mails: [] })
-      return next
-    })
-    setSelectedMail(null)
-  }, [])
+    dispatch({ type: 'clear_active_mailbox' })
+  }, [dispatch])
 
   const markMailAsRead = useCallback((id) => {
-    const sid = activeShortIdRef.current
-    setMailboxMap(prev => {
-      const next = new Map(prev)
-      const existing = next.get(sid)
-      if (existing) {
-        next.set(sid, {
-          ...existing,
-          mails: existing.mails.map(m => m.id === id ? { ...m, is_read: true } : m),
-          unreadCount: Math.max(0, existing.unreadCount - (existing.mails.find(m => m.id === id && !m.is_read) ? 1 : 0)),
-        })
-      }
-      return next
-    })
-    setSelectedMail(prev => prev?.id === id ? { ...prev, is_read: true } : prev)
-  }, [])
+    dispatch({ type: 'mark_mail_read', id })
+  }, [dispatch])
+
+  const setSelectedMail = useCallback((selectedMail) => {
+    dispatch({ type: 'set_selected_mail', mail: selectedMail })
+  }, [dispatch])
 
   return {
     tabs,
-    activeShortId,
+    activeShortId: state.activeShortId,
     setActiveShortId: subscribeToShortId,
     subscribeToShortId,
     unsubscribeFromShortId,
     requestNewShortId,
     mails,
-    selectedMail,
+    selectedMail: state.selectedMail,
     setSelectedMail,
     clearMails,
     markMailAsRead,
-    recentMails,
+    recentMails: state.recentMails,
     loadRecentMails,
   }
-}
-
-function fetchStoredMails(shortId, setMailboxMap) {
-  apiGet(`/api/mails?shortId=${encodeURIComponent(shortId)}`)
-    .then(mails => {
-      if (!Array.isArray(mails) || mails.length === 0) return
-      setMailboxMap(prev => {
-        const next = new Map(prev)
-        const existing = next.get(shortId) || { mails: [], unreadCount: 0 }
-        const existingIds = new Set(existing.mails.map(m => m.id))
-        const newMails = mails.filter(m => !existingIds.has(m.id)).map(normalizeMail)
-        if (newMails.length === 0) return prev
-        const merged = [...existing.mails, ...newMails].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        const unreadCount = merged.filter(m => !m.is_read).length
-        next.set(shortId, { mails: merged, unreadCount })
-        return next
-      })
-    })
-    .catch(() => {})
-}
-
-function removeFromHistory(shortId) {
-  try {
-    const raw = localStorage.getItem(TABS_STORAGE_KEY)
-    let list = raw ? JSON.parse(raw) : []
-    if (!Array.isArray(list)) list = []
-    list = list.filter(id => id !== shortId)
-    localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(list))
-
-    const raw2 = localStorage.getItem('shortid_history_v1')
-    let list2 = raw2 ? JSON.parse(raw2) : []
-    if (!Array.isArray(list2)) list2 = []
-    list2 = list2.filter(id => id !== shortId)
-    localStorage.setItem('shortid_history_v1', JSON.stringify(list2))
-  } catch {}
-}
-
-function upsertHistory(shortId) {
-  try {
-    const raw = localStorage.getItem('shortid_history_v1')
-    let list = raw ? JSON.parse(raw) : []
-    if (!Array.isArray(list)) list = []
-    list = list.filter(id => id !== shortId)
-    list.unshift(shortId)
-    if (list.length > 6) list = list.slice(0, 6)
-    localStorage.setItem('shortid_history_v1', JSON.stringify(list))
-  } catch {}
 }

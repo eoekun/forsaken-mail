@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { apiGet } from './lib/api'
+import { loadPublicConfig } from './lib/configApi'
 import { ToastProvider } from './components/Toast'
 import ErrorBoundary from './components/ErrorBoundary'
 import LoginPage from './pages/LoginPage'
@@ -58,10 +58,9 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    apiGet('/api/config')
+    loadPublicConfig()
       .then(data => {
-        const hosts = (data.hosts || [data.host]).map(d => d.trim()).filter(Boolean)
-        setConfig({ host: data.host, hosts, siteTitle: data.site_title, authMode: data.auth_mode, keywordBlacklist: data.keyword_blacklist || '' })
+        setConfig(data)
         if (data.email) {
           setUser({ email: data.email })
         }

@@ -17,18 +17,23 @@ type WebhookSender interface {
 	Send(from, to, subject, text string, codes []string)
 }
 
-// Router connects SMTP receipt to storage, WebSocket push, and webhook notification.
-type Router struct {
+// Broadcaster pushes mailbox updates to websocket clients.
+type Broadcaster interface {
+	SendTo(shortID string, data any)
+}
+
+// Processor orchestrates incoming mail persistence and fan-out.
+type Processor struct {
 	mailStore  *Store
-	hub        *ws.Hub
-	settings   *settings.Store
+	hub        Broadcaster
+	settings   *settings.Service
 	auditStore *audit.Store
 	webhook    WebhookSender
 }
 
-// NewRouter creates a new Router with the given dependencies.
-func NewRouter(mailStore *Store, hub *ws.Hub, settings *settings.Store, auditStore *audit.Store, webhook WebhookSender) *Router {
-	return &Router{
+// NewProcessor creates a new Processor with the given dependencies.
+func NewProcessor(mailStore *Store, hub Broadcaster, settings *settings.Service, auditStore *audit.Store, webhook WebhookSender) *Processor {
+	return &Processor{
 		mailStore:  mailStore,
 		hub:        hub,
 		settings:   settings,
@@ -40,13 +45,13 @@ func NewRouter(mailStore *Store, hub *ws.Hub, settings *settings.Store, auditSto
 // Handle processes an incoming mail: saves it, pushes via WebSocket, records an
 // audit event, and sends a webhook notification for each valid recipient.
 // The senderIP parameter is the remote SMTP client IP for audit logging.
-func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBody string, rawSize int64, senderIP string) {
-	mailHost, err := r.settings.Get("mail_host")
+func (r *Processor) Handle(from string, toList []string, subject, textBody, htmlBody string, rawSize int64, senderIP string) {
+	values, err := r.settings.Load()
 	if err != nil {
-		slog.Error("failed to get mail_host setting", "error", err)
+		slog.Error("failed to load runtime mail settings", "error", err)
 		return
 	}
-	mailHost = strings.ToLower(strings.TrimSpace(mailHost))
+	mailHost := strings.ToLower(strings.TrimSpace(values.MailHost))
 
 	for _, addr := range toList {
 		addr = strings.TrimSpace(addr)
@@ -93,8 +98,7 @@ func (r *Router) Handle(from string, toList []string, subject, textBody, htmlBod
 		})
 
 		// Record audit event (if enabled).
-		auditMail, _ := r.settings.Get("audit_mail_received")
-		if auditMail != "0" {
+		if values.AuditMailReceived {
 			detailMap := map[string]any{
 				"from":    from,
 				"to":      addr,

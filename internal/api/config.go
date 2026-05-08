@@ -7,7 +7,6 @@ import (
 
 	"forsaken-mail/internal/auth"
 	"forsaken-mail/internal/i18n"
-	"forsaken-mail/internal/mail"
 )
 
 // handleConfig responds to GET /api/config with site configuration.
@@ -17,29 +16,12 @@ func (rt *Router) handleConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, _ := rt.settings.Get("mail_host")
-	siteTitle, _ := rt.settings.Get("site_title")
-	blacklist, _ := rt.settings.Get("keyword_blacklist")
-
-	hosts := mail.ParseDomains(host)
-	if len(hosts) == 0 {
-		hosts = []string{host}
-	}
-
-	resp := map[string]any{
-		"host":              hosts[0],
-		"hosts":             hosts,
-		"site_title":        siteTitle,
-		"auth_mode":         rt.cfg.AuthMode,
-		"keyword_blacklist": blacklist,
-	}
-
-	// Include user email if authenticated.
 	email := auth.GetEmail(r)
-	if email != "" {
-		resp["email"] = email
+	resp, err := rt.publicConfig.Load(email)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, i18n.T(i18n.LangFromRequest(r), "internal_server_error"))
+		return
 	}
-
 	writeJSON(w, http.StatusOK, resp)
 }
 

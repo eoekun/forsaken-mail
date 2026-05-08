@@ -44,27 +44,17 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mailHost, err := rt.settings.Get("mail_host")
-	if err != nil || mailHost == "" {
+	values, err := rt.settings.Load()
+	if err != nil || values.MailHost == "" {
 		writeError(w, http.StatusInternalServerError, i18n.T(lang, "mail_host_not_configured"))
 		return
-	}
-
-	// Get configurable SMTP host (default: smtp.qq.com)
-	smtpHost, _ := rt.settings.Get("test_smtp_host")
-	if smtpHost == "" {
-		smtpHost = "smtp.qq.com"
-	}
-	smtpPort, _ := rt.settings.Get("test_smtp_port")
-	if smtpPort == "" {
-		smtpPort = "465"
 	}
 
 	shortID := req.ShortID
 	if shortID == "" {
 		shortID = "test"
 	}
-	recipient := shortID + "@" + mailHost
+	recipient := shortID + "@" + values.MailHost
 
 	subject := fmt.Sprintf("SMTP Test - %s", time.Now().Format("2006-01-02 15:04:05"))
 	body := fmt.Sprintf("This is a test email sent via SMTP to tmail.\n\nSender: %s\nRecipient: %s\nTime: %s\n", req.SenderEmail, recipient, time.Now().Format(time.RFC3339))
@@ -72,21 +62,21 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s",
 		req.SenderEmail, recipient, subject, body)
 
-	addr := net.JoinHostPort(smtpHost, smtpPort)
+	addr := net.JoinHostPort(values.TestSMTPHost, fmt.Sprintf("%d", values.TestSMTPPort))
 	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
 	if err != nil {
 		writeSMTPError(w, lang, "smtp_connect_failed", err)
 		return
 	}
 
-	tlsConn := tls.Client(conn, &tls.Config{ServerName: smtpHost})
+	tlsConn := tls.Client(conn, &tls.Config{ServerName: values.TestSMTPHost})
 	if err := tlsConn.Handshake(); err != nil {
 		conn.Close()
 		writeSMTPError(w, lang, "tls_handshake_failed", err)
 		return
 	}
 
-	client, err := smtp.NewClient(tlsConn, smtpHost)
+	client, err := smtp.NewClient(tlsConn, values.TestSMTPHost)
 	if err != nil {
 		tlsConn.Close()
 		writeSMTPError(w, lang, "smtp_client_error", err)
@@ -94,7 +84,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	defer client.Close()
 
-	auth := smtp.PlainAuth("", req.SenderEmail, req.AuthCode, smtpHost)
+	auth := smtp.PlainAuth("", req.SenderEmail, req.AuthCode, values.TestSMTPHost)
 	if err := client.Auth(auth); err != nil {
 		writeSMTPError(w, lang, "smtp_auth_failed", err)
 		return

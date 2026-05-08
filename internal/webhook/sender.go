@@ -23,11 +23,11 @@ type Result struct {
 
 // Sender sends webhook notifications to configured services.
 type Sender struct {
-	settings *settings.Store
+	settings *settings.Service
 }
 
 // NewSender creates a new webhook Sender.
-func NewSender(settings *settings.Store) *Sender {
+func NewSender(settings *settings.Service) *Sender {
 	return &Sender{settings: settings}
 }
 
@@ -110,30 +110,24 @@ func notifySend(svc notify.Notifier, subject, body string) error {
 
 // Send sends a notification about a received email.
 func (s *Sender) Send(from, to, subject, text string, codes []string) {
-	enabled, _ := s.settings.Get("webhook_enabled")
-	if enabled != "1" {
-		return
-	}
-
-	service, _ := s.settings.Get("webhook_service")
-	configStr, _ := s.settings.Get("webhook_config")
-	messageTemplate, _ := s.settings.Get("webhook_message")
-
-	config, err := parseConfig(configStr)
+	values, err := s.settings.Load()
 	if err != nil {
-		slog.Error("failed to parse webhook_config", "error", err)
+		slog.Error("failed to load runtime settings for webhook", "error", err)
+		return
+	}
+	if !values.WebhookEnabled {
 		return
 	}
 
-	switch strings.ToLower(strings.TrimSpace(service)) {
+	switch strings.ToLower(strings.TrimSpace(values.WebhookService)) {
 	case "dingtalk":
-		s.sendDingTalk(from, to, subject, text, codes, messageTemplate, config)
+		s.sendDingTalk(from, to, subject, text, codes, values.WebhookMessage, values.WebhookConfig)
 	case "telegram":
-		s.sendTelegram(from, to, subject, text, codes, messageTemplate, config)
+		s.sendTelegram(from, to, subject, text, codes, values.WebhookMessage, values.WebhookConfig)
 	case "slack":
-		s.sendSlack(from, to, subject, text, codes, messageTemplate, config)
+		s.sendSlack(from, to, subject, text, codes, values.WebhookMessage, values.WebhookConfig)
 	default:
-		slog.Warn("unknown webhook service", "service", service)
+		slog.Warn("unknown webhook service", "service", values.WebhookService)
 	}
 }
 

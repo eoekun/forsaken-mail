@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"sync"
 	"sync/atomic"
 
 	"github.com/coder/websocket"
@@ -24,6 +25,7 @@ type Hub struct {
 	subscribe   chan subscribeMsg
 	unsubscribe chan subscribeMsg
 	broadcast   chan *Message
+	blacklistMu sync.RWMutex
 	blacklist   []string
 	mailHost    string
 	shutdown    chan struct{} // signals Run() to shut down
@@ -141,6 +143,14 @@ func (h *Hub) SendTo(shortID string, data any) {
 		ShortID: shortID,
 		Data:    data,
 	}
+}
+
+// UpdateBlacklist swaps the runtime blacklist used for short ID validation.
+func (h *Hub) UpdateBlacklist(blacklist []string) {
+	next := append([]string(nil), blacklist...)
+	h.blacklistMu.Lock()
+	h.blacklist = next
+	h.blacklistMu.Unlock()
 }
 
 // HandleWS upgrades an HTTP request to a WebSocket connection and starts

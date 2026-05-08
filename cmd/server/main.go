@@ -56,6 +56,7 @@ func main() {
 	if err := settingsStore.Init(); err != nil {
 		log.Fatalf("failed to init settings store: %v", err)
 	}
+	settingsService := settings.NewService(settingsStore, cfg)
 
 	auditStore := audit.NewStore(db)
 	if err := auditStore.Init(); err != nil {
@@ -67,38 +68,29 @@ func main() {
 		log.Fatalf("failed to init mail store: %v", err)
 	}
 
-	if err := settingsStore.SeedFromEnv(cfg); err != nil {
+	if err := settingsService.SeedFromEnv(cfg); err != nil {
 		log.Fatalf("failed to seed settings: %v", err)
 	}
 
-	blacklistStr, err := settingsStore.Get("keyword_blacklist")
+	blacklist, err := settingsService.KeywordBlacklist()
 	if err != nil {
 		log.Fatalf("failed to read keyword_blacklist: %v", err)
-	}
-	var blacklist []string
-	if blacklistStr != "" {
-		for _, kw := range strings.Split(blacklistStr, ",") {
-			kw = strings.TrimSpace(kw)
-			if kw != "" {
-				blacklist = append(blacklist, kw)
-			}
-		}
 	}
 
 	hub := ws.NewHub(blacklist, cfg.MailHost)
 
-	webhookSender := webhook.NewSender(settingsStore)
+	webhookSender := webhook.NewSender(settingsService)
 
-	router := mail.NewRouter(mailStore, hub, settingsStore, auditStore, webhookSender)
+	router := mail.NewProcessor(mailStore, hub, settingsService, auditStore, webhookSender)
 
 	smtpAddr := fmt.Sprintf("%s:%d", cfg.MailinHost, cfg.MailinPort)
 	limiter := fsmtp.NewRateLimiter(10, 20)
-	smtpServer := fsmtp.New(router, limiter, settingsStore, auditStore)
+	smtpServer := fsmtp.New(router, limiter, settingsService, auditStore)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go mail.StartCleanup(ctx, mailStore, auditStore, settingsStore)
+	go mail.StartCleanup(ctx, mailStore, auditStore, settingsService)
 	go hub.Run(ctx)
 
 	// Auth
@@ -112,7 +104,7 @@ func main() {
 	}
 
 	// API router
-	apiRouter := api.NewRouter(cfg, sessions, authMW, mailStore, settingsStore, auditStore, hub, webhookSender, localAuth)
+	apiRouter := api.NewRouter(cfg, sessions, authMW, mailStore, settingsService, auditStore, hub, webhookSender, localAuth)
 
 	// Combine API routes with static file serving for the SPA.
 	httpServer := &http.Server{

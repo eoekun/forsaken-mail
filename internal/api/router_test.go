@@ -44,6 +44,10 @@ func newRouterTestEnv(t *testing.T) *routerTestEnv {
 	if err := settingsStore.Set("mail_host", "mail.test"); err != nil {
 		t.Fatal(err)
 	}
+	settingsService := settings.NewService(settingsStore, &config.Config{
+		MailHost:  "mail.test",
+		SiteTitle: "Tmail",
+	})
 
 	auditStore := audit.NewStore(db)
 	if err := auditStore.Init(); err != nil {
@@ -70,10 +74,10 @@ func newRouterTestEnv(t *testing.T) *routerTestEnv {
 		sessions,
 		authMW,
 		mailStore,
-		settingsStore,
+		settingsService,
 		auditStore,
 		hub,
-		webhook.NewSender(settingsStore),
+		webhook.NewSender(settingsService),
 		auth.NewLocalAuth("admin", "password123"),
 	)
 
@@ -252,5 +256,114 @@ func TestHandler_EmailsDeleteByShortID(t *testing.T) {
 	}
 	if count != 0 {
 		t.Fatalf("expected mailbox to be deleted, got %d mails", count)
+	}
+}
+
+func TestHandler_ConfigReturnsTypedBlacklist(t *testing.T) {
+	env := newRouterTestEnv(t)
+	if _, err := env.db.Exec(`UPDATE settings SET value = ? WHERE key = ?`, "admin, root ,Admin", "keyword_blacklist"); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/config", nil)
+	rec := httptest.NewRecorder()
+	env.handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
+	}
+
+	var resp struct {
+		KeywordBlacklist []string `json:"keyword_blacklist"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []string{"admin", "root"}
+	if len(resp.KeywordBlacklist) != len(expected) {
+		t.Fatalf("expected %v, got %v", expected, resp.KeywordBlacklist)
+	}
+	for i, item := range expected {
+		if resp.KeywordBlacklist[i] != item {
+			t.Fatalf("expected %v, got %v", expected, resp.KeywordBlacklist)
+		}
+	}
+}
+
+func TestHandler_AdminSettingsUsesTypedContract(t *testing.T) {
+	env := newRouterTestEnv(t)
+
+	body := []byte(`{
+		"webhook_enabled": true,
+		"webhook_service": "telegram",
+		"webhook_config": {"token":"abc","chat_id":"123"},
+		"mail_retention_hours": 6,
+		"audit_mail_received": false
+	}`)
+
+	req := env.newRequest(t, http.MethodPut, "/api/admin/settings", body, true)
+	rec := httptest.NewRecorder()
+	env.handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, rec.Code, rec.Body.String())
+	}
+
+	var updateResp struct {
+		Status string         `json:"status"`
+		Values map[string]any `json:"values"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&updateResp); err != nil {
+		t.Fatal(err)
+	}
+	if updateResp.Status != "ok" {
+		t.Fatalf("expected status ok, got %q", updateResp.Status)
+	}
+	if enabled, ok := updateResp.Values["webhook_enabled"].(bool); !ok || !enabled {
+		t.Fatalf("expected webhook_enabled=true in response, got %#v", updateResp.Values["webhook_enabled"])
+	}
+
+	getReq := env.newRequest(t, http.MethodGet, "/api/admin/settings", nil, false)
+	getRec := httptest.NewRecorder()
+	env.handler.ServeHTTP(getRec, getReq)
+
+	if getRec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, getRec.Code)
+	}
+
+	var settingsResp struct {
+		WebhookEnabled    bool              `json:"webhook_enabled"`
+		WebhookConfig     map[string]string `json:"webhook_config"`
+		MailRetentionHours int              `json:"mail_retention_hours"`
+		AuditMailReceived bool              `json:"audit_mail_received"`
+	}
+	if err := json.NewDecoder(getRec.Body).Decode(&settingsResp); err != nil {
+		t.Fatal(err)
+	}
+
+	if !settingsResp.WebhookEnabled {
+		t.Fatal("expected webhook_enabled to be true")
+	}
+	if settingsResp.WebhookConfig["token"] != "abc" {
+		t.Fatalf("expected webhook token to be persisted, got %v", settingsResp.WebhookConfig)
+	}
+	if settingsResp.MailRetentionHours != 6 {
+		t.Fatalf("expected mail_retention_hours=6, got %d", settingsResp.MailRetentionHours)
+	}
+	if settingsResp.AuditMailReceived {
+		t.Fatal("expected audit_mail_received to be false")
+	}
+}
+
+func TestHandler_AdminSettingsRejectsUnknownKeys(t *testing.T) {
+	env := newRouterTestEnv(t)
+
+	req := env.newRequest(t, http.MethodPut, "/api/admin/settings", []byte(`{"unknown_key":"value"}`), true)
+	rec := httptest.NewRecorder()
+	env.handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, rec.Code)
 	}
 }

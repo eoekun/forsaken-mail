@@ -3,7 +3,6 @@ package mail
 import (
 	"context"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"forsaken-mail/internal/audit"
@@ -14,7 +13,7 @@ const cleanupInterval = 5 * time.Minute
 
 // StartCleanup runs a periodic goroutine that cleans up old mails and audit
 // logs based on settings. It blocks until the context is cancelled.
-func StartCleanup(ctx context.Context, mailStore *Store, auditStore *audit.Store, settingsStore *settings.Store) {
+func StartCleanup(ctx context.Context, mailStore *Store, auditStore *audit.Store, settingsStore *settings.Service) {
 	ticker := time.NewTicker(cleanupInterval)
 	defer ticker.Stop()
 
@@ -32,11 +31,17 @@ func StartCleanup(ctx context.Context, mailStore *Store, auditStore *audit.Store
 	}
 }
 
-func runCleanup(mailStore *Store, auditStore *audit.Store, settingsStore *settings.Store) {
-	mailHours := getSettingInt(settingsStore, "mail_retention_hours", 1)
-	mailMaxCount := getSettingInt(settingsStore, "mail_max_count", 100)
-	auditDays := getSettingInt(settingsStore, "audit_retention_days", 7)
-	auditMaxCount := getSettingInt(settingsStore, "audit_max_count", 5000)
+func runCleanup(mailStore *Store, auditStore *audit.Store, settingsStore *settings.Service) {
+	values, err := settingsStore.Load()
+	if err != nil {
+		slog.Error("failed to load runtime settings for cleanup", "error", err)
+		return
+	}
+
+	mailHours := values.MailRetentionHours
+	mailMaxCount := values.MailMaxCount
+	auditDays := values.AuditRetentionDays
+	auditMaxCount := values.AuditMaxCount
 
 	if mailHours > 0 {
 		if err := mailStore.CleanupByAge(mailHours); err != nil {
@@ -65,23 +70,4 @@ func runCleanup(mailStore *Store, auditStore *audit.Store, settingsStore *settin
 		"audit_days", auditDays,
 		"audit_max_count", auditMaxCount,
 	)
-}
-
-// getSettingInt reads a setting by key and converts it to int. Returns the
-// default value if the setting is empty or not a valid integer.
-func getSettingInt(s *settings.Store, key string, defaultVal int) int {
-	v, err := s.Get(key)
-	if err != nil {
-		slog.Warn("failed to read setting, using default", "key", key, "default", defaultVal, "error", err)
-		return defaultVal
-	}
-	if v == "" {
-		return defaultVal
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		slog.Warn("invalid setting value, using default", "key", key, "value", v, "default", defaultVal)
-		return defaultVal
-	}
-	return n
 }

@@ -54,7 +54,10 @@ func (h *Hub) generateShortID() string {
 // substring (case-insensitive).
 func (h *Hub) isBlacklisted(id string) bool {
 	lower := strings.ToLower(id)
-	for _, kw := range h.blacklist {
+	h.blacklistMu.RLock()
+	blacklist := append([]string(nil), h.blacklist...)
+	h.blacklistMu.RUnlock()
+	for _, kw := range blacklist {
 		if kw == "" {
 			continue
 		}
